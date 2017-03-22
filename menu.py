@@ -1,6 +1,8 @@
 import os
 import datetime
 from collections import OrderedDict
+import math
+import re
 import requests 
 from bs4 import BeautifulSoup as bs
 from bs4 import Comment 
@@ -345,8 +347,6 @@ def check_for_dup_rest_links():
     print sorted([x for x in metro_links if x in city_links])
 
 def grab_restaurant_links_city():
-    import math
-    import re
     city = session.query(City).filter_by(metro_area=False,state_id=2).all()
     for c in city:
         r = requests.get(c.city_link)
@@ -444,8 +444,7 @@ def grab_restaurant_links_city():
             pass
 
 def grab_restaurant_links_metro():
-    import math
-    import re
+    
     metro = session.query(MetroArea).filter_by(state_id=2).all()
     for m in metro:
         print m.metro_link
@@ -551,10 +550,100 @@ def grab_restaurant_links_metro():
             pass
                 
 def pop_rest_links():
-    rest = session.query(RestaurantLinks).filter_by(state_id=2).all()
-    for r in rest:
-        print r.rest_link
-        print r.rest_link.rsplit("/")[-2:-1][0]
+    # rest = session.query(RestaurantLinks).filter_by(state_id=2, menu_available=True).all()
+    # for r in rest:
+    #     print r.rest_link
+    #     print r.rest_link.rsplit("/")[-2:-1][0]
+    r = requests.get("http://www.menupix.com/anchorage/restaurants/336943/Dark-Horse-Coffee-Anchorage-AK")
+    print "url: ",r.url
+    print "################################################"
+    soup = bs(r.content, "html.parser")
+    div_start = soup.find("div", {"class": "content-main-block"})
+    notecard = div_start.find("div", {"id":"notecard-block"})
+    # restaurant address
+    address = notecard.find("span", {"itemprop":"streetAddress"}).get_text()
+    city_ = notecard.find("span", {"itemprop":"addressLocality"}).get_text()
+    state_ = notecard.find("span", {"itemprop": "addressRegion"}).get_text()
+    zip_ = notecard.find("span", {"itemprop": "postalCode"}).get_text()
+    phone = notecard.find("span", {"itemprop": "telephone"}).get_text()
+    print address,city_,state_,zip_,phone
+    print "##############################################################"
+    # yum yuck menu section 
+    cusine_items = notecard.find_all("span", {"itemprop":"servesCuisine"})
+    print "### Cusine List ###"
+    for item in cusine_items:
+        print item.get_text()
+    print "--------------------"
+
+    right_summary = notecard.find("div", {"id":"restaurant-summary-left"})
+    websites = right_summary.find_all("a", {"class":"mobile-linespacing"})
+    print "### website ###"
+    for w in websites:
+        website = re.search(r'.*\..*\..*', w.get_text())
+        if website: 
+            print "Website: ", website.group(0)
+    print "########## restaurant description ##########################"
+    description = div_start.find(text="Restaurant Description").findNext('p').contents[0]
+    print description
+    print "########### hours ##########################################"
+    hours = div_start.find(text="Hours").findNext('p').contents[0]
+    print hours.strip()
+    print hours.split(",")
+    print "########### additional info ################################"
+    add_info_block = div_start.find("div", {"class":"content-main-columns"})
+    for p in add_info_block.find_all("p"):
+        info = p.get_text().split()
+        # print info
+        if info[0]=="Delivery":
+            if len(info) > 1: print "Delivery: ", info[1]
+            else: print None
+        if info[0] == "Price":
+            # print info[2:]
+            # print "Price: ", info[2]," "," ",info[3]," ",info[9]," ",info[13]," ",info[17]
+            if len(info) > 1:
+                if info[2] == info[3]:
+                    print "Price: "," ".join(info[5:9]) 
+                elif info[2] == info[9]:
+                    print "Price: "," ".join(info[11:13])
+                elif info[2] == info[13]:
+                    print "Price: "," ".join(info[15:17])
+                elif info[2] == info[17]:
+                    print "Price: "," ".join(info[19:])
+            else: print None
+        if info[0] == "Attire":
+            if len(info) > 1: print "Attire: ", " ".join(info[1:])
+            else: print "Attire: ", None
+        if info[0] == "Payment":
+            if len(info) > 1: print "Payment: ", " ".join(info[1:])
+            else: print "Payment: ", None
+        if info[0] == "WiFi":
+            if len(info) > 1: print "WiFi: ", info[1]
+            else: print "WiFi: ", None
+        if info[0] == "Alcohol":
+            if len(info) > 1: print "Alcohol: ", " ".join(info[1:])
+            else: print "Alcohol: ", None
+        if info[0] == "Parking":
+            if len(info) > 1: print "Parking: ", " ".join(info[1:])
+            else: print "Parking: ", None
+        if " ".join(info[0:2]) == "Outdoor Seats":
+            if len(info) > 2: print "Outdoor Seats: ", info[2]
+            else: print "Outdoor Seats: ", None 
+        if info[0] == "Reservations":
+            if len(info) > 1: print "Reservations: ", info[1]
+            else: print "Reservations: ", None
+        if " ".join(info[0:3]) == "Good for Kids":
+            if len(info) > 3: print "Good for Kids: ", info[3]
+            else: print "Good for Kids: ", None
+
+def grab_menu_by_id():
+    # menu_t = session.query(RestaurantLinks).filter_by(menu_available=True, state_id=2).count()
+    r = requests.get("http://www.menupix.com/menudirectory/menu.php?id=5300833")
+    soup = bs(r.content, "html.parser")
+    div_start = soup.find("td", {"valign": "top"})
+    print div_start.get_text()
+
+    
+
 
 if __name__ == "__main__":
     import time 
@@ -574,7 +663,8 @@ if __name__ == "__main__":
     # check_for_dup_rest_links()
     # grab_restaurant_links_city()
     # grab_restaurant_links_metro()
-    pop_rest_links()
+    # pop_rest_links()
+    grab_menu_by_id()
     end = (time.time() - t0)
     print end, ": in seconds", "  ", end/60, ": in minutes"
 
