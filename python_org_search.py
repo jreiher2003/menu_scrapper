@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from TorCtl import TorCtl
 from stem import Signal
 from stem.control import Controller
+from fake_useragent import UserAgent
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait # available since 2.4.0
@@ -15,9 +16,9 @@ from selenium.common.exceptions import TimeoutException
 from pyvirtualdisplay import Display
 
 def script_menu_type_1():
-    html1 = open('/vagrant/html_examples/fired_up_pizza_380133687_type_2.html')
+    html1 = open('/vagrant/html_examples/l_may_eatery_310066_multi_header.html')
     html = html1.read()
-    soup = BeautifulSoup(html,"html5lib")
+    soup = BeautifulSoup(html,"html5lib", from_encoding='utf-8')
     table_start = soup.find("table")
     try:
         td = table_start.find_all("tr")
@@ -27,9 +28,11 @@ def script_menu_type_1():
         categories = soup.find_all("span", {"class":"sp_st_section_title"})
         items = soup.find_all("p", {"class":"fn"})
         all_menu_items = soup.find('div', {'id':'sp_panes'})
-        for l in all_menu_items.find_all(True, {'class': ['sp_st', 'fn','sp_description','sp_option_li']}):
+        for l in all_menu_items.find_all(True, {'class': ['sp_st','sp_sd', 'fn','sp_description','sp_option_li']}):
             if 'sp_st' in l.attrs['class']:
                 print "_____ Category _________"
+                print l.get_text().strip()
+            if 'sp_sd' in l.attrs['class']:# category description
                 print l.get_text().strip()
                 print "##########################"
                 print '\n'
@@ -48,7 +51,7 @@ def script_menu_pdf_type_2():
     # this is for if menu has type=2
     import re
     pattern = re.compile(r'Open Menu in a New Window')
-    html1 = open('/vagrant/html_examples/fired_up_pizza_380133687_type_2.html')
+    html1 = open('/vagrant/html_examples/machine_shed_1505591_type_2.html')
     html = html1.read()
     soup = BeautifulSoup(html,"html5lib")
     pdf_menu = soup.find('a', text=pattern)
@@ -75,7 +78,7 @@ def menu_pix():
         display.stop()
     return
 
-def get_current_ip():
+def get_current_ip(user_agent):
     display = Display(visible=0, size=(800, 800))  
     display.start()
     profile=webdriver.FirefoxProfile()
@@ -83,7 +86,8 @@ def get_current_ip():
     profile.set_preference('network.proxy.socks', '127.0.0.1')
     profile.set_preference('network.proxy.socks_port', 9050)
     profile.set_preference('javascript.enabled', True)
-    profile.set_preference("general.useragent.override", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
+    profile.set_preference("general.useragent.override", user_agent)
+    
     browser=webdriver.Firefox(profile)
     url = 'http://ipinfo.io/ip'
     browser.get(url)
@@ -109,13 +113,14 @@ def renew_ip():
         controller.close()
 
 if __name__ == "__main__":
-    for i in range(0,10):
-        import time
-        get_current_ip()
-        time.sleep(8)
-        renew_ip()
-        print "------------------------------------------------------------"
-        print "************************************************************"
-        print "------------------------------------------------------------"
-        # script_menu_type_1()
-        # script_menu_pdf_type_2()
+    ua = UserAgent()
+    # for i in range(0,1):
+    import time
+    get_current_ip(ua.random)
+    script_menu_type_1()
+    print "------------------------------------------------------------"
+    print "************************************************************"
+    print "------------------------------------------------------------"
+    # script_menu_pdf_type_2()
+    time.sleep(8)
+    renew_ip()

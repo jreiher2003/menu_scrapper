@@ -1,0 +1,73 @@
+<html xmlns="http://www.w3.org/1999/xhtml" hasBrowserHandlers="true">
+  <head>
+    <link rel="stylesheet" type="text/css" media="all" href="chrome://global/skin/in-content/info-pages.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="chrome://browser/content/aboutTabCrashed.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="chrome://browser/skin/aboutTabCrashed.css" />
+  <title>Restaurant Menu | MenuPix</title></head>
+
+  <body dir="ltr">
+    <div id="main" class="container" multiple="false">
+
+      <div class="title">
+        <h1 class="title-text">Gah. Your tab just crashed.</h1>
+      </div>
+
+      <div class="offers">
+        <h2>We can help you!</h2>
+        <p id="offerHelpMessageSingle">Choose Restore This Tab to reload page content.</p>
+        <p id="offerHelpMessageMultiple">Choose Restore This Tab or Restore All Crashed Tabs to reload page content.</p>
+      </div>
+
+      <div id="reportBox">
+        <h2>Will you help us?</h2>
+        <p>Crash reports help us diagnose problems and make Firefox better.</p>
+
+        <h2>Report this tab</h2>
+
+        <div class="checkbox-with-label">
+          <input id="sendReport" type="checkbox" />
+          <label for="sendReport">Send a crash report for the tab you are viewing</label>
+        </div>
+
+        <ul id="options" hidden="">
+          <li>
+            <textarea id="comments" placeholder="Optional comments (comments are publicly visible)" rows="4"></textarea>
+          </li>
+
+          <li class="checkbox-with-label">
+            <input id="includeURL" type="checkbox" />
+            <label for="includeURL">Include page URL with this crash report</label>
+          </li>
+
+          <li id="requestEmail" hidden="true">
+            <div class="checkbox-with-label">
+              <input id="emailMe" type="checkbox" />
+              <label for="emailMe">Email me when more information is available</label>
+            </div>
+            <input id="email" placeholder="Enter your email address here" type="text" />
+          </li>
+        </ul>
+
+        <div id="requestAutoSubmit" hidden="true">
+          <h2>Report background tabs</h2>
+          <div class="checkbox-with-label">
+            <input id="autoSubmit" type="checkbox" />
+            <label for="autoSubmit">Update preferences to automatically submit backlogged crash reports (and get fewer messages like this from us in the future)</label>
+          </div>
+        </div>
+      </div>
+
+      <p id="reportSent">Crash report already submitted; thank you for helping make Firefox better!</p>
+
+      <div class="button-container">
+        <button id="closeTab">
+          Close This Tab</button>
+        <button id="restoreTab" class="primary">
+          Restore This Tab</button>
+        <button id="restoreAll" autofocus="true" class="primary">
+          Restore All Crashed Tabs</button>
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript;version=1.8" src="chrome://browser/content/aboutTabCrashed.js"></script>
+</html>

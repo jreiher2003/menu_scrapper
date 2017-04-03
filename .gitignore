@@ -1,3 +1,8 @@
 venv/
 *.pyc
 *.db
+*.txt
+pytorctrl/
+*.log
+python_org_search.py
+
