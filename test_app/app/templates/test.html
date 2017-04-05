@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% for r in rrr %}
+        <br>
+    {{ r.id }}, {{ r.rest_name }},
+    {% for x in r.cusine %}
+     {{ x.name }},
+    {% endfor %}
+{% endfor %}
+{% endblock %}

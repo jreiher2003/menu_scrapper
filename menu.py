@@ -723,7 +723,6 @@ def script_menu_type_1(user_agent, rest_link_id, menu_url_id):
         td = table_start.find_all("tr")
         #get and store menu name with restauant link id
         menu_name = [tr.find("strong") for tr in td[0]][1].get_text(strip=True)
-        # rest_link_table = session.query(RestaurantLinks).filter_by(menu_url_id=menu_url_id).one()
         print menu_name, rest_link_id
         m = Menu(name=menu_name, restaurant_links_id=rest_link_id)
         session.add(m)

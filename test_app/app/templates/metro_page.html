@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>{{ metro_name.neighborhood_name }}</h2>
+
+{% for r in rest %}
+    <a href="{{ url_for('rest_page_metro', url_slug_state=url_slug_state, state_id=state_id, url_slug_metro=metro_name.url_slug_metro, metro_id=r.metro_area_id, url_slug_rest=r.url_slug_menu,rest_id=r.id) }}">{{ r.rest_name }}</a>
+     {% for x in r.cusine %}
+       {{ x.name }},
+     {% endfor %}
+    <br>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+{% for i in state %}
+   
+        <a href="{{ url_for('state_page', state_name=i.name,url_slug_state=i.url_slug_state,state_id=i.id) }}">{{ i.name }}</a><br>
+   
+{% endfor %}
+<br><br><br>
+
+<h2>Florida Counties</h2>
+    {% for f in flo_citys %}
+{% for x in flo %}
+            <h3>{{ x.name }}</h3>
+       
+            {{ f.name }},{{ f.county_id }}<br>
+       
+    {% endfor %}
+    
+{% endfor %}
+{% endblock %}
