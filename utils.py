@@ -6,6 +6,8 @@ from selenium.webdriver.support.ui import WebDriverWait # available since 2.4.0
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from pyvirtualdisplay import Display
+import requests
+from bs4 import BeautifulSoup as bs
 
 def renew_ip():
     with Controller.from_port(port = 9051) as controller:
@@ -18,10 +20,10 @@ def whats_the_ip():
     soup = bs(r.content, "html5lib")
     ip = soup.find("body")
     print ip.get_text()
-    rr = requests.get("http://ipinfo.io/ip")
-    soup = bs(rr.content, "html5lib")
-    ipr = soup.find("body")
-    print ipr.get_text()
+    # rr = requests.get("http://ipinfo.io/ip")
+    # soup = bs(rr.content, "html5lib")
+    # ipr = soup.find("body")
+    # print ipr.get_text()
 
 def get_current_ip(user_agent):
     display = Display(visible=0, size=(800, 800))  
