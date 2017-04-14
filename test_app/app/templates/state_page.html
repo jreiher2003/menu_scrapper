@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>{{ state_name }}, {{ state_id }}<h1>
+<h1>{{ state_name }}, {{ state_id }}</h1>
 {% for c in county %}
     <h3>{{ c.name }}, {{ c.id }}</h3>
     {% for s in city_metro %}
         {% if s.county_id == c.id %}
-            <a href="{{ url_for('city_page',url_slug_state=url_slug_state,state_id=state_id, url_slug_city=s.url_slug_city, city_id=s.id) }}"> {% if s.neighborhood_name %}{{ s.neighborhood_name }}{% else %}{{ s.city_name }}{% endif %}</a> ,{{ s.county_id }} {{ s.id }}
+            <a href="{{ url_for('city_page',url_slug_state=url_slug_state,state_id=state_id, url_slug_city=s.url_slug_city, city_metro_id=s.id) }}"> {% if s.neighborhood_name %}{{ s.neighborhood_name }}{% else %}{{ s.city_name }}{% endif %}</a> ,{{ s.county_id }} {{ s.id }} # of restaurants {{ s.r_total }}<br>
         {% endif %}
     {% endfor %}
 {% endfor %}
-<h2>Non County</h2>
-{% for m in city_metro_non_county_id %}
-    {{ m.city_name }}, {{ m.neighborhood_name }}, {{ m.r_total }}, {{ m.state_id }}<br>
+
+{% for c in canada %}
+  <a href="{{ url_for('city_page',url_slug_state=url_slug_state,state_id=state_id, url_slug_city=c.url_slug_city, city_metro_id=c.id) }}"> {% if c.neighborhood_name %}{{ c.neighborhood_name }}{% else %}{{ c.city_name }}{% endif %}</a>, {{ c.id }} # of restaurants {{ c.r_total }}<br>
 {% endfor %}
+
 {% endblock %}

@@ -3,6 +3,7 @@ import datetime
 import re
 from collections import OrderedDict
 import math
+import time
 import string
 from pprint import pprint
 import requests 
@@ -20,8 +21,8 @@ from pyvirtualdisplay import Display
 from sqlalchemy import create_engine
 from sqlalchemy import desc,asc
 from sqlalchemy.orm import sessionmaker
-from models import State, MetroAssoc, CityMetro, County, RestaurantLinks#, \
-# Menu, RestaurantLinksCusine, Cusine, RestaurantMenuCategory, Category, RestaurantMenuCategoryItem
+from models import State, MetroAssoc, CityMetro, County, RestaurantLinks,RestaurantLinksCusine, Cusine
+# Menu, RestaurantMenuCategory, Category, RestaurantMenuCategoryItem
 from utils import renew_ip, get_current_ip, whats_the_ip
 
 engine = create_engine(os.environ["SCRAPER_URL"])
@@ -86,6 +87,54 @@ def find_county():
                     city1 = CityMetro(city_name=l.find('a').get_text().strip(), city_link=l.find('a')['href'].strip(),metro_area=False, state_id=state1.id, county_id=county1.id)
                     session.add(city1)
             session.commit()
+
+def pop_cusine_table():
+    """
+    Scapes front page of every state link.  Saves cusine list to table. Checks to see if the record is there first.  
+    ex. http://www.menupix.com/alabama 
+    """
+    state_list = session.query(State).all() 
+    for state1 in state_list:
+        r = requests.get(state1.state_link, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
+        soup = bs(r.content, "lxml")
+        try:
+            div_start = soup.find("div", {"id": "leftnav_cuisine_state_index"})
+            for l in div_start.find_all('li', {'class':'index_bulletpoints'}):
+                # print l.get_text().split("(")[0].strip() 
+                item = l.get_text().split("(")[0].strip() 
+                cusine_object = session.query(Cusine).filter_by(name=item).one_or_none()
+                # print cusine_object
+                if cusine_object is None:
+                    print item 
+                    print "\n"
+                    new_cusine_object = Cusine()
+                    new_cusine_object.name = item
+                    session.add(new_cusine_object)
+                    session.commit()
+                else:
+                    print "do nothing object already exsists."
+        except AttributeError:
+            print "ERROR: ", state1.name, "has no cusine links"
+            div_start = soup.find("div", {"id": "short_cuisineslist"})
+            for l in div_start.find_all(True, {'class':['short_cuisine_class','long_cuisine_class']}):
+                # print l.get_text().split("(")[0].strip() 
+                item = l.get_text().split("(")[0].strip() 
+                cusine_object = session.query(Cusine).filter_by(name=item).one_or_none()
+                # print cusine_object
+                if cusine_object is None:
+                    print item 
+                    print "\n"
+                    new_cusine_object = Cusine()
+                    new_cusine_object.name = item
+                    session.add(new_cusine_object)
+                    session.commit()
+                else:
+                    print "do nothing object already exsists."
+        except:
+            print "NO URL EXSISTS FOR: ", state.name 
+
+
+
 
 def pop_dc():
     """ 
@@ -524,10 +573,204 @@ def grab_restaurant_links_city(state_id):
             print "ERROR: there was a problem"
 
 
+def pop_rest_links(_id):
+    ua = UserAgent()
+    headers = {'user-agent': ua.random}
+    # try:
+    r = session.query(RestaurantLinks).filter_by(id=_id).one()#.filter_by(state_id=2, menu_available=True)
+    # for r in rest:
+    restaurant_url_page = r.rest_link
+    menu_url_id = r.rest_link.rsplit("/")[-2:-1][0].strip()
+    r.menu_url_id = menu_url_id 
+    #time.sleep(1)
+    d = requests.get(r.rest_link,  headers=headers, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
+    print "url: ",d.url, d.status_code
+    print r.rest_name
+    print "id: ",r.id, "state_id: ", r.state_id, "county_id: ", r.county_id, "city_metro_id: ", r.city_metro_id
+    soup = bs(d.content, "html.parser")
+    div_start = soup.find("div", {"class": "content-main-block"})
+    notecard = div_start.find("div", {"id":"notecard-block"})
+    # # # restaurant address
+    address = notecard.find("span", {"itemprop":"streetAddress"}).get_text()
+    city_ = notecard.find("span", {"itemprop":"addressLocality"}).get_text()
+    state_ = notecard.find("span", {"itemprop": "addressRegion"}).get_text()
+    zip_ = notecard.find("span", {"itemprop": "postalCode"}).get_text()
+    phone = notecard.find("span", {"itemprop": "telephone"}).get_text()
+    # print address,city_,state_,zip_,phone
+    r.address = address 
+    r.city_ = city_ 
+    r.state_ = state_
+    r.zip_ = zip_ 
+    r.phone = phone
+    print "##############################################################"
+    # # # yum yuck menu section 
+    cusine_items = notecard.find_all("span", {"itemprop":"servesCuisine"})
+    # print "### Cusine List ###"
+    for item in cusine_items:
+        cusine_object = session.query(Cusine).filter_by(name=item.get_text().strip()).one_or_none()
+        print cusine_object
+        if cusine_object is None:
+            cusine_type = Cusine()
+            cusine_type.name = item.get_text().strip() 
+            session.add(cusine_type)
+            session.commit()
+            rlc = RestaurantLinksCusine(restaurant_links_id=r.id,cusine_id=cusine_type.id)
+            session.add(rlc)
+            session.commit()
+        else:
+            rlc1 = RestaurantLinksCusine(restaurant_links_id=r.id,cusine_id=cusine_object.id)
+            session.add(rlc1)
+            session.commit()
+    # # print "--------------------"
+    right_summary = notecard.find("div", {"id":"restaurant-summary-left"})
+    websites = right_summary.find_all("a", {"class":"mobile-linespacing"})
+    # print "### website ###"
+    for w in websites:
+        website = re.search(r'.*\..*\..*', w.get_text())
+        if website: 
+            print "Website: ", website.group(0)
+            r.website = website.group(0).strip()
+    # print "########## restaurant description ##########################"
+    description = div_start.find(text="Restaurant Description").findNext('p').contents[0].strip()
+    if not description == "Is this your restaurant?":
+        r.description = description
+    # print description
+    # print "########### hours ##########################################"
+    hours = div_start.find(text="Hours").findNext('p').contents[0]
+    r.hours = hours.strip()
+    # print hours.split(",")
+    print "########### additional info ################################"
+    add_info_block = div_start.find("div", {"class":"content-main-columns"})
+    for p in add_info_block.find_all("p"):
+        info = p.get_text().split()
+        # print info
+        if info[0]=="Delivery":
+            if len(info) > 1: 
+                print "Delivery: ", info[1]
+                if info[1].strip() == "No":
+                    r.delivery = False
+                if info[1].strip() == "Yes":
+                    r.delivery = True
+            else: 
+                print None
+        if info[0] == "Price":
+            if len(info) > 1:
+                if info[2] == info[3]:
+                    print "Price: "," ".join(info[5:9]) 
+                    r.price_point = " ".join(info[5:9]).strip()
+                elif info[2] == info[9]:
+                    print "Price: "," ".join(info[11:13])
+                    r.price_point = " ".join(info[11:13]).strip()
+                elif info[2] == info[13]:
+                    print "Price: "," ".join(info[15:17])
+                    r.price_point = " ".join(info[15:17]).strip()
+                elif info[2] == info[17]:
+                    print "Price: "," ".join(info[19:])
+                    r.price_point = " ".join(info[19:]).strip()
+            else: 
+                print None
+        if info[0] == "Attire":
+            if len(info) > 1: 
+                print "Attire: ", " ".join(info[1:])
+                r.attire = " ".join(info[1:]).strip()
+            else: 
+                print "Attire: ", None
+        if info[0] == "Payment":
+            if len(info) > 1: 
+                print "Payment: ", " ".join(info[1:])
+                r.payment = " ".join(info[1:]).strip()
+            else: 
+                print "Payment: ", None
+        if info[0] == "WiFi":
+            if len(info) > 1: 
+                print "WiFi: ", info[1]
+                if info[1].strip() == "Yes":
+                    r.wifi = True
+                if info[1].strip() == "No":
+                    r.wifi = False
+            else: 
+                print "WiFi: ", None
+        if info[0] == "Alcohol":
+            if len(info) > 1: 
+                print "Alcohol: ", " ".join(info[1:])
+                r.alcohol = " ".join(info[1:]).strip()
+            else: 
+                print "Alcohol: ", None
+        if info[0] == "Parking":
+            if len(info) > 1: 
+                print "Parking: ", " ".join(info[1:])
+                r.parking = " ".join(info[1:]).strip()
+            else: 
+                print "Parking: ", None
+        if " ".join(info[0:2]) == "Outdoor Seats":
+            if len(info) > 2: 
+                print "Outdoor Seats: ", info[2]
+                if info[2].strip() == "Yes":
+                    r.outdoor_seats = True 
+                if info[2].strip() == "No":
+                    r.outdoor_seats = False
+            else: 
+                print "Outdoor Seats: ", None 
+        if info[0] == "Reservations":
+            if len(info) > 1: 
+                print "Reservations: ", info[1]
+                if info[1].strip() == "Yes":
+                    r.reservations = True
+                if info[1].strip() == "No":
+                    r.reservations = False
+            else: 
+                print "Reservations: ", None
+        if " ".join(info[0:3]) == "Good for Kids":
+            if len(info) > 3: 
+                print "Good for Kids: ", info[3]
+                if info[3].strip() == "Yes":
+                    r.good_for_kids = True
+                if info[3].strip() == "No":
+                    r.good_for_kids = False
+            else: 
+                print "Good for Kids: ", None
+    session.add(r)
+    session.commit()
 
-if __name__ == "__main__":
-    import time 
-    t0 = time.time()
+
+def pop_text_menu_available(limit,offset):
+    """ 
+    querys restauant links table and updates column text_menu_available if the text Text Menu appears
+    on the page.
+    """
+    update = session.query(RestaurantLinks).filter(RestaurantLinks.menu_url_id != None, RestaurantLinks.menu_available==True).order_by(asc(RestaurantLinks.id)).offset(offset).limit(limit).all()
+    off = 0
+    pattern = re.compile(r'Text Menu')
+    for u in update:
+        off += 1
+        print "\n"
+        print "offset: ",off
+        print "********************"
+        print u.id 
+        r = requests.get("http://www.menupix.com/menudirectory/menu.php?id=%s" % u.menu_url_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
+        soup = bs(r.content, "lxml")
+        try:
+            text_menu = soup.find(text=pattern).encode('UTF-8').strip()
+            real_text_menu = text_menu.decode('utf-8').split("|")[1].strip()
+            if real_text_menu == 'Text Menu':
+                print "yes"
+                u.text_menu_available = True 
+                session.add(u)
+                session.commit()
+            else:
+                print "no"
+        except AttributeError:
+            print "ERROR: NoneType object has no attribute encode expect"
+            u.text_menu_available = False 
+            session.add(u)
+            session.commit()
+
+
+
+
+# if __name__ == "__main__":
+#     import time 
+#     t0 = time.time()
 
     # renew_ip()    
     # time.sleep(12) 
@@ -564,18 +807,31 @@ if __name__ == "__main__":
     ############################################
     ############################################
     # don't forget to do canada
-    renew_ip()    
-    time.sleep(12)
-    for i in range(52,63):# state      #geo from county to county+1
-        print "for loop: ", i
-        # renew_ip()    
-        time.sleep(1)
-        # whats_the_ip()
-        grab_restaurant_links_city(i)
+    # renew_ip()    
+    # time.sleep(12)
+    # for i in range(52,63):# state      #geo from county to county+1
+    #     print "for loop: ", i
+    #     # renew_ip()    
+    #     time.sleep(1)
+    #     # whats_the_ip()
+    #     grab_restaurant_links_city(i)
     ############################################
+
+    ############################################
+    ### pop menu rest_link #####################
+    # ############################################
+    # start_id = raw_input("starting id: ")
+    # end_id = raw_input("ending id: ")
+    # renew_ip()
+    # time.sleep(12)
+    # # id's of restaurant_links  
+    # for i in range(int(start_id), int(end_id)):
+    #     print "for loop: ", i 
+    #     pop_rest_links(i)
+    # #############################################
    
-    end = (time.time() - t0)
-    print end, ": in seconds", "  ", end/60, ": in minutes"
+    # end = (time.time() - t0)
+    # print end, ": in seconds", "  ", end/60, ": in minutes"
 
      
 

@@ -1,4 +1,4 @@
-appdirs==1.4.2
+appdirs==1.4.3
 beautifulsoup4==4.5.3
 cffi==1.10.0
 click==6.7
@@ -31,6 +31,5 @@ six==1.10.0
 slugify==0.0.1
 SQLAlchemy==1.1.6
 stem==1.5.4
-torctl==0.2
 webencodings==0.5
 Werkzeug==0.12.1

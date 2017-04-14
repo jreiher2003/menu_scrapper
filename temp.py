@@ -537,9 +537,11 @@ def pop_text_menu_available():
     querys restauant links table and updates column text_menu_available if the text Text Menu appears
     on the page.
     """
-    update = session.query(RestaurantLinks).filter(RestaurantLinks.menu_url_id != None).all()
+    update = session.query(RestaurantLinks).filter(RestaurantLinks.menu_url_id != None, menu_available=True).all()
     pattern = re.compile(r'Text Menu')
     for u in update:
+        print "********************"
+        print u.id 
         r = requests.get("http://www.menupix.com/menudirectory/menu.php?id=%s" % u.menu_url_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
         soup = bs(r.content, "lxml")
         try:
@@ -589,3 +591,29 @@ def pop_menu_items():
         renew_ip()    
         time.sleep(20)
         print "new ip created"
+
+
+def test_run():
+    none = session.query(RestaurantLinks).filter_by(phone=None).order_by(asc(RestaurantLinks.id)).all()
+    none1 = session.query(RestaurantLinks).filter_by(phone=None).count()
+    tmr = 0
+    cr = 0
+    cee = 0
+    at = 0
+    print none1
+    # for n in none:
+    #     try:
+    #         pop_rest_links(n.id)
+    #     except requests.exceptions.TooManyRedirects:
+    #         print "ERROR: too many redirects"
+    #         tmr += 1
+    #     except requests.exceptions.ConnectionError:
+    #         print "ERROR: connection error"
+    #         cr += 1
+    #     except requests.exceptions.ChunkedEncodingError:
+    #         print "ERROR: connection broken incompleted read"
+    #         cee += 1
+    #     except AttributeError:
+    #         print "AttributeError: 'NoneType' object has no attribute 'find'."
+    #         at += 1 
+    # print "tmr:",tmr," cr:",cr, " cee:",cee, " at:",at

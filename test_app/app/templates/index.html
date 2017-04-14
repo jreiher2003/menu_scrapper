@@ -1,7 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
+<h1>USA</h1>
 {% for i in state %}
-    <a href="{{ url_for('state_page',url_slug_state=i.url_slug_state, state_id=i.id) }}">{{ i.name }}</a><br>
+    {% if i.id < 52 %}
+        <a href="{{ url_for('state_page',url_slug_state=i.url_slug_state, state_id=i.id) }}">{{ i.name }}</a><br>
+    {% endif %}
+{% endfor %}
+<h1>Canada</h1>
+{% for i in state %}
+    {% if i.id > 51 %}
+        <a href="{{ url_for('state_page',url_slug_state=i.url_slug_state, state_id=i.id) }}">{{ i.name }}</a><br>
+    {% endif %}
 {% endfor %}
 <br><br><br>
 {% endblock %}

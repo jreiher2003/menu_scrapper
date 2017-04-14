@@ -1,3 +1,4 @@
+import os
 from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy import Column, Date, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
@@ -81,16 +82,16 @@ class RestaurantLinks(Base):
     # cusine = relationship('Cusine', secondary='restaurant_links_cusine', backref=backref('restaurant_links', lazy='dynamic', cascade="all, delete-orphan", single_parent=True))
     # menu = relationship("Menu", uselist=False, backref="restaurant_links")
 
-# class Cusine(Base):
-#     __tablename__ = "cusine"
-#     id = Column(Integer, primary_key=True)
-#     name = Column(String, nullable=False, unique=True)
+class Cusine(Base):
+    __tablename__ = "cusine"
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False, unique=True)
 
-# class RestaurantLinksCusine(Base):
-#     __tablename__ = "restaurant_links_cusine"
-#     id = Column(Integer, primary_key=True)
-#     restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
-#     cusine_id = Column(Integer, ForeignKey('cusine.id', ondelete='CASCADE'), index=True)
+class RestaurantLinksCusine(Base):
+    __tablename__ = "restaurant_links_cusine"
+    id = Column(Integer, primary_key=True)
+    restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
+    cusine_id = Column(Integer, ForeignKey('cusine.id', ondelete='CASCADE'), index=True)
 
 # class Menu(Base):
 #     __tablename__ = "menu"
@@ -136,10 +137,10 @@ class RestaurantLinks(Base):
 # RestaurantLinks.__table__.create(engine)
 
 # Cusine.__table__.drop(engine)
-# Cusine.__table__.create(engine)
+#Cusine.__table__.create(engine)
 
 # RestaurantLinksCusine.__table__.drop(engine)
-# RestaurantLinksCusine.__table__.create(engine)
+#RestaurantLinksCusine.__table__.create(engine)
 
 #################################################
 #################################################

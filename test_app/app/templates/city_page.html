@@ -2,12 +2,18 @@
 {% block content %}
 
 <h2>{{ city_name }}</h2>
+<p>number of restaurants: {{ rest_total }}</p>
 
 {% for r in rest %}
-    <a href="{{ url_for('rest_page_city', url_slug_state=url_slug_state, state_id=state_id, url_slug_city=url_slug_city, city_id=city_id, url_slug_rest=r.url_slug_menu,rest_id=r.id) }}">{{ r.rest_name }}</a>
-     {% for x in r.cusine %}
+    <a href="{{ url_for('rest_page_city', url_slug_state=url_slug_state, state_id=state_id, url_slug_city=url_slug_city, city_metro_id=city_metro_id, url_slug_rest=r.url_slug_menu, rest_id=r.id) }}">{{ r.rest_name }}</a><br>
+    {{ r.address }}<br>
+    {{ r.city_ }}, {{ r.state_ }} {{ r.zip_ }}<br>
+    {{ r.phone }}<br>
+      {% for x in r.cusine %}
        {{ x.name }},
      {% endfor %}
+    <hr>
+    
     <br>
 {% endfor %}
 {% endblock %}
