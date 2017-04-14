@@ -2,7 +2,8 @@ from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy import Column, Date, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
-engine = create_engine('sqlite:///my_menu1.db')
+
+engine = create_engine(os.environ["SCRAPER_URL"])
 Base = declarative_base()
 
 class State(Base):

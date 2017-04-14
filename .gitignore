@@ -5,4 +5,7 @@ venv/
 pytorctrl/
 *.log
 python_org_search.py
-
+*.dump
+sql/*
+.vagrant/
+Vagrantfile

@@ -7,7 +7,7 @@ class BaseConfig(object):
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:////vagrant/test_app/my_menu1.db'
+    SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
 
 class ProductionConfig(BaseConfig):
     DEBUG = False

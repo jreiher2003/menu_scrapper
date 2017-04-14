@@ -24,7 +24,7 @@ from models import State, MetroAssoc, CityMetro, County, RestaurantLinks#, \
 # Menu, RestaurantLinksCusine, Cusine, RestaurantMenuCategory, Category, RestaurantMenuCategoryItem
 from utils import renew_ip, get_current_ip, whats_the_ip
 
-engine = create_engine('sqlite:///my_menu1.db')
+engine = create_engine(os.environ["SCRAPER_URL"])
 Session = sessionmaker(bind=engine)
 session = Session()
 
@@ -414,13 +414,13 @@ def remove_exact_dups():
 ############ restaurant info ##################################################
 ###############################################################################
 
-def grab_restaurant_links_city(county_id):
+def grab_restaurant_links_city(state_id):
     # city = session.query(CityMetro).filter_by(id=2782,metro_area=False,state_id=10).all()
     """ Scrapes city restaurant page ( the page that lists all the restaurants by city ) and retrieves 
     restaurant name, rest_link, thumnail_img, menu_available,  and relays city_name, neighborhood_name, state_id, county_id, city_metro_id
     change county_id = None to get the candian records.  or grab_restaurant_links_city(None) county_id = None is all Canada related cities.
     """
-    city = session.query(CityMetro).filter_by(county_id=county_id).order_by(asc(CityMetro.county_id)).all()
+    city = session.query(CityMetro).filter_by(state_id=state_id).all()#.order_by(asc(CityMetro.county_id))
     for c in city:
         r = requests.get(c.city_link, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
         soup = bs(r.content, "lxml")
@@ -566,7 +566,7 @@ if __name__ == "__main__":
     # don't forget to do canada
     renew_ip()    
     time.sleep(12)
-    for i in range(1817,2232):# state   nm       #geo from county to county+1 185,243
+    for i in range(52,63):# state      #geo from county to county+1
         print "for loop: ", i
         # renew_ip()    
         time.sleep(1)
