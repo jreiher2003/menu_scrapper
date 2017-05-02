@@ -102,15 +102,15 @@ if __name__ == "__main__":
     #############################################
     time.sleep(15)
     renew_ip()
-    offset = raw_input("offset: ")
-    limit = raw_input("limit: ")
-    update = session.query(RestaurantLinks).filter(RestaurantLinks.menu_url_id != None, RestaurantLinks.menu_available==True).order_by(asc(RestaurantLinks.id)).offset(offset).limit(limit).all()
+    start = raw_input("start: ")
+    end = raw_input("end: ")
+    # update = session.query(RestaurantLinks).filter(RestaurantLinks.menu_url_id != None, RestaurantLinks.menu_available==True).order_by(asc(RestaurantLinks.id)).offset(offset).limit(limit).all()
     off = 0
-    for u in update:
+    for i in range(int(start),int(end)):
         off += 1
-        print "real loop: ", off, " rest_id: ", u.id
+        print "real loop: ", off, " rest_id: ", i
         try:
-            pop_text_menu_available(u.id)
+            pop_text_menu_available(i)
         except IndexError:
             print "End of list"
         except requests.exceptions.ConnectionError:
@@ -118,7 +118,7 @@ if __name__ == "__main__":
             time.sleep(15)
             renew_ip()
             time.sleep(15)
-            pop_text_menu_available(u.id)
+            pop_text_menu_available(i)
         except AttributeError: # checks regex value Text Menu on menu page.
             print "ERROR: NoneType object has no attribute encode expect"
     end = (time.time() - t0)
