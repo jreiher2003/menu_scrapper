@@ -97,6 +97,8 @@ def update_text_menu_available():
             pop_text_menu_available(i)
         except AttributeError: # checks regex value Text Menu on menu page.
             print "ERROR: NoneType object has no attribute encode expect"
+        except (KeyboardInterrupt, SystemExit):
+            raise
 
 if __name__ == "__main__":
     import time 
