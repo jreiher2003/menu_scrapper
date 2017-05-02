@@ -733,37 +733,28 @@ def pop_rest_links(_id):
     session.commit()
 
 
-def pop_text_menu_available(limit,offset):
+def pop_text_menu_available(uid):
     """ 
     querys restauant links table and updates column text_menu_available if the text Text Menu appears
     on the page.
     """
-    update = session.query(RestaurantLinks).filter(RestaurantLinks.menu_url_id != None, RestaurantLinks.menu_available==True).order_by(asc(RestaurantLinks.id)).offset(offset).limit(limit).all()
-    off = 0
+    ua = UserAgent()
+    headers = {'user-agent': ua.random}
+    one = session.query(RestaurantLinks).filter_by(id=uid).one()
+    r = requests.get("http://www.menupix.com/menudirectory/menu.php?id=%s" % one.menu_url_id, headers=headers, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
+    soup = bs(r.content, "lxml")
     pattern = re.compile(r'Text Menu')
-    for u in update:
-        off += 1
-        print "\n"
-        print "offset: ",off
-        print "********************"
-        print u.id 
-        r = requests.get("http://www.menupix.com/menudirectory/menu.php?id=%s" % u.menu_url_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
-        soup = bs(r.content, "lxml")
-        try:
-            text_menu = soup.find(text=pattern).encode('UTF-8').strip()
-            real_text_menu = text_menu.decode('utf-8').split("|")[1].strip()
-            if real_text_menu == 'Text Menu':
-                print "yes"
-                u.text_menu_available = True 
-                session.add(u)
-                session.commit()
-            else:
-                print "no"
-        except AttributeError:
-            print "ERROR: NoneType object has no attribute encode expect"
-            u.text_menu_available = False 
-            session.add(u)
-            session.commit()
+    text_menu = soup.find(text=pattern).encode('UTF-8').strip()
+    real_text_menu = text_menu.decode('utf-8').split("|")[1].strip()
+    if real_text_menu == 'Text Menu':
+        print "yes"
+        one.text_menu_available = True 
+        session.add(one)
+    else:
+        print "no"
+        one.text_menu_available = False 
+        session.add(one)
+    session.commit()
 
 
 
