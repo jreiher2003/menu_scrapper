@@ -76,9 +76,27 @@ def run_rest_code():
             renew_ip()
             time.sleep(30)
 
-
-    
-
+def update_text_menu_available():
+    time.sleep(15)
+    renew_ip()
+    start = raw_input("start: ")
+    end = raw_input("end: ")
+    off = 0
+    for i in range(int(start),int(end)):
+        off += 1
+        print "real loop: ", off, " rest_id: ", i
+        try:
+            pop_text_menu_available(i)
+        except IndexError:
+            print "End of list"
+        except requests.exceptions.ConnectionError:
+            print "ERROR: connection error"
+            time.sleep(15)
+            renew_ip()
+            time.sleep(15)
+            pop_text_menu_available(i)
+        except AttributeError: # checks regex value Text Menu on menu page.
+            print "ERROR: NoneType object has no attribute encode expect"
 
 if __name__ == "__main__":
     import time 
@@ -99,27 +117,7 @@ if __name__ == "__main__":
     ### pop menu rest_link #####################
     # run_rest_code()
     ############################################
+    update_text_menu_available()
     #############################################
-    time.sleep(15)
-    renew_ip()
-    start = raw_input("start: ")
-    end = raw_input("end: ")
-    # update = session.query(RestaurantLinks).filter(RestaurantLinks.menu_url_id != None, RestaurantLinks.menu_available==True).order_by(asc(RestaurantLinks.id)).offset(offset).limit(limit).all()
-    off = 0
-    for i in range(int(start),int(end)):
-        off += 1
-        print "real loop: ", off, " rest_id: ", i
-        try:
-            pop_text_menu_available(i)
-        except IndexError:
-            print "End of list"
-        except requests.exceptions.ConnectionError:
-            print "ERROR: connection error"
-            time.sleep(15)
-            renew_ip()
-            time.sleep(15)
-            pop_text_menu_available(i)
-        except AttributeError: # checks regex value Text Menu on menu page.
-            print "ERROR: NoneType object has no attribute encode expect"
     end = (time.time() - t0)
     print end, ": in seconds", "  ", end/60, ": in minutes"
