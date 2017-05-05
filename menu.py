@@ -742,8 +742,10 @@ def pop_text_menu_available(uid):
     headers = {'user-agent': ua.random}
     one = session.query(RestaurantLinks).filter_by(id=uid).one()
     if one.menu_available == False:
+        print "menu available false"
         one.text_menu_available = False
         session.add(one)
+        session.commit()
     if one.menu_available == True:
         r = requests.get("http://www.menupix.com/menudirectory/menu.php?id=%s" % one.menu_url_id, headers=headers, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
         soup = bs(r.content, "lxml")
@@ -751,14 +753,14 @@ def pop_text_menu_available(uid):
         text_menu = soup.find(text=pattern).encode('UTF-8').strip()
         real_text_menu = text_menu.decode('utf-8').split("|")[1].strip()
         if real_text_menu == 'Text Menu':
-            print "yes"
+            print "text yes"
             one.text_menu_available = True 
             session.add(one)
-        else:
-            print "no"
+        elif real_text_menu != 'Text Menu':
+            print "text no"
             one.text_menu_available = False 
             session.add(one)
-    session.commit()
+        session.commit()
 
 
 
