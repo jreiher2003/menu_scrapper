@@ -1,4 +1,5 @@
 import os
+import time 
 import datetime
 import re
 from collections import OrderedDict
@@ -12,16 +13,16 @@ from stem import Signal
 from stem.control import Controller
 from fake_useragent import UserAgent
 from selenium import webdriver
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait # available since 2.4.0
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from pyvirtualdisplay import Display
 from sqlalchemy import create_engine
 from sqlalchemy import desc,asc
 from sqlalchemy.orm import sessionmaker
-from models import State, MetroAssoc, CityMetro, County, RestaurantLinks,RestaurantLinksCusine, Cusine
-# Menu, RestaurantMenuCategory, Category, RestaurantMenuCategoryItem
+from models import State, MetroAssoc, CityMetro, County, RestaurantLinks,RestaurantLinksCusine, Cusine, Menu, RestaurantMenuCategory, Category, RestaurantMenuCategoryItem
 from menu import connect_states, pop_dc, change_sanluisobispo, change_missouri_kc, change_mississipi, change_portland, change_washington,\
 pop_city_metro_true, delete_duplicate_city_links_with_no_info, update_city_metro_r_totals, change_more_county_id, compare_city_metro, \
 delete_duplicate_city_links, remove_exact_dups, grab_restaurant_links_city, pop_rest_links, pop_cusine_table, pop_text_menu_available
@@ -100,8 +101,124 @@ def update_text_menu_available():
         except (KeyboardInterrupt, SystemExit):
             raise
 
+def script_menu_type_1(rest_link_id, menu_url_id, wait_time):#user_agent, 
+    display = Display(visible=0, size=(800, 800))  
+    display.start()
+    # binary = FirefoxBinary('/usr/bin/firefox')
+    profile=webdriver.FirefoxProfile()
+    profile.set_preference('network.proxy.type', 1)
+    profile.set_preference('network.proxy.socks', '127.0.0.1')
+    profile.set_preference('network.proxy.socks_port', 9050)
+    profile.set_preference('javascript.enabled', True)
+    # profile.set_preference("general.useragent.override", user_agent)
+    browser=webdriver.Firefox(profile)#executable_path="/home/vagrant/geckodriver", firefox_profile=firefox_binary=binary, firefox_profile=
+    u = "http://www.menupix.com/menudirectory/menu.php?id=%s&type=1" % menu_url_id
+    browser.get(u)
+    WebDriverWait(browser, wait_time).until(EC.presence_of_element_located((By.ID, 'menusContainer')))
+    print browser.current_url
+    html = browser.page_source
+    soup = bs(html,"lxml")
+    table_start = soup.find("table")
+    td = table_start.find_all("tr")
+    #get and store menu name with restauant link id
+    menu_name = [tr.find("strong") for tr in td[0]][1].get_text(strip=True)
+    print menu_name, rest_link_id
+    m = Menu(name=menu_name, restaurant_links_id=rest_link_id)
+    session.add(m)
+    session.commit()
+    time.sleep(20)
+    print soup.find('div', {'id':'menusContainer'})
+    all_menu_items = soup.find('div', {'id':'sp_panes'})
+    for l in all_menu_items.find_all(True, {'class': ['sp_st','sp_sd','hstorefrontproduct', 'fn','sp_option', 'sp_description']}):
+        if 'sp_st' in l.attrs['class']:
+            cat = Category()
+            rmc = RestaurantMenuCategory()
+            print "_____ Category _________"
+            print l.get_text(strip=True)
+            cat.name = l.get_text(strip=True)
+        if 'sp_sd' in l.attrs['class']:# category description
+            print l.get_text(strip=True)
+            cat.description = l.get_text(strip=True)
+            print "##########################"
+            print '\n'
+        if 'hstorefrontproduct' in l.attrs['class']:
+            print "New Menu Item"
+            print "_____________"
+            rmci = RestaurantMenuCategoryItem()
+        if 'sp_description' in l.attrs['class']:
+            rmci_description = l.get_text(strip=True)
+            rmci.description = rmci_description
+            print rmci_description
+            print "\n"
+        if 'sp_option' in l.attrs['class']:
+            rmci_price = l.get_text(strip=True)
+            rmci.price = rmci_price
+            print rmci_price
+        if 'fn' in l.attrs['class'] and not 'sp_st' in l.attrs['class']:
+            rmci_name = l.get_text(strip=True)
+            rmci.name = rmci_name
+            rmci.restaurant_links_id = rest_link_id 
+            rmci.menu_id = m.id 
+            rmci.category_id = cat.id 
+            print rmci_name
+            session.add(rmci)
+            session.commit()
+        session.add(cat)
+        session.commit()
+        rmc.restaurant_links_id = rest_link_id 
+        rmc.menu_id = m.id
+        rmc.category_id = cat.id
+        session.add(rmc)
+        session.commit()
+    time.sleep(5)
+    browser.quit()
+    display.stop()
+    time.sleep(5)
+
+def pop_menu_items():
+    renew_ip()
+    time.sleep(12)
+    start = raw_input("start: ")
+    end = raw_input("end: ")
+    off = 0
+    # ua = UserAgent()
+    wait_time = 200
+    for i in range(int(start),int(end)):
+        rq = session.query(RestaurantLinks).filter_by(id=i).one()
+        off += 1
+        print "read loop: ", off, " rest_id: ", rq.id 
+        if rq.text_menu_available == True:
+            print "text menu is true..."
+            print "restaurant menu id: ",rq.id, " menu_url_id: ",rq.menu_url_id
+            try:
+                script_menu_type_1(rq.id, rq.menu_url_id, wait_time)#ua.random, 
+            except TimeoutException:
+                print "TimeoutException: going to try again in 3,2,1..."
+                time.sleep(8)
+                renew_ip()
+                print "ip renewed"
+                time.sleep(12)
+                wait_time = 300
+                script_menu_type_1(rq.id, rq.menu_url_id, wait_time)#ua.random, 
+            # except WebDriverException:
+            #     print "WebDriverException: going to try again in 3,2,1.."
+            #     time.sleep(8)
+            #     renew_ip()
+            #     print "ip renewed"
+            #     time.sleep(12)
+            #     wait_time = 300
+            #     script_menu_type_1(ua.random, rq.id, rq.menu_url_id, wait_time)
+
+            except AttributeError: # checks regex value Text Menu on menu page.
+                print "ERROR: NoneType object has no attribute 'find_all"
+
+
+        elif rq.text_menu_available == False:
+            print "text menu is false..."
+        else:
+            print "is null...text menu"
+
 if __name__ == "__main__":
-    import time 
     t0 = time.time()
     ############################################
     # delete_duplicate_city_links_with_no_info()
@@ -119,7 +236,12 @@ if __name__ == "__main__":
     ### pop menu rest_link #####################
     # run_rest_code()
     ############################################
-    update_text_menu_available()
+    # update_text_menu_available()
     #############################################
+    # ua = UserAgent()
+    # script_menu_type_1(ua.random,3,5202628)
+    #############################################
+    pop_menu_items()
+
     end = (time.time() - t0)
     print end, ": in seconds", "  ", end/60, ": in minutes"
