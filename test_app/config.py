@@ -8,6 +8,7 @@ class BaseConfig(object):
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
+    SQLALCHEMY_ECHO = True
 
 class ProductionConfig(BaseConfig):
     DEBUG = False

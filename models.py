@@ -93,34 +93,34 @@ class RestaurantLinksCusine(Base):
     restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
     cusine_id = Column(Integer, ForeignKey('cusine.id', ondelete='CASCADE'), index=True)
 
-# class Menu(Base):
-#     __tablename__ = "menu"
-#     id = Column(Integer, primary_key=True) 
-#     name = Column(String)
-#     restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
+class Menu(Base):
+    __tablename__ = "menu"
+    id = Column(Integer, primary_key=True) 
+    name = Column(String)
+    restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
 
-# class Category(Base):
-#     __tablename__ = "category"
-#     id = Column(Integer, primary_key=True) 
-#     name = Column(String)
-#     description = Column(String)
+class Category(Base):
+    __tablename__ = "category"
+    id = Column(Integer, primary_key=True) 
+    name = Column(String)
+    description = Column(String)
 
-# class RestaurantMenuCategory(Base):
-#     __tablename__ = "restaurant_menu_category"
-#     id = Column(Integer, primary_key=True)
-#     restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
-#     menu_id = Column(Integer, ForeignKey('menu.id', ondelete='CASCADE'), index=True)
-#     category_id = Column(Integer, ForeignKey('category.id', ondelete='CASCADE'), index=True)
+class RestaurantMenuCategory(Base):
+    __tablename__ = "restaurant_menu_category"
+    id = Column(Integer, primary_key=True)
+    restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
+    menu_id = Column(Integer, ForeignKey('menu.id', ondelete='CASCADE'), index=True)
+    category_id = Column(Integer, ForeignKey('category.id', ondelete='CASCADE'), index=True)
 
-# class RestaurantMenuCategoryItem(Base):
-#     __tablename__ = "restaurant_menu_category_item"
-#     id = Column(Integer, primary_key=True)
-#     name = Column(String)
-#     description = Column(String)
-#     price = Column(String)
-#     restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
-#     menu_id = Column(Integer, ForeignKey('menu.id', ondelete='CASCADE'), index=True)
-#     category_id = Column(Integer, ForeignKey('category.id', ondelete='CASCADE'), index=True)
+class RestaurantMenuCategoryItem(Base):
+    __tablename__ = "restaurant_menu_category_item"
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    description = Column(String)
+    price = Column(String)
+    restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
+    menu_id = Column(Integer, ForeignKey('menu.id', ondelete='CASCADE'), index=True)
+    category_id = Column(Integer, ForeignKey('category.id', ondelete='CASCADE'), index=True)
 
 # Base.metadata.drop_all(engine)
 # print "all tables dropped"
@@ -156,4 +156,5 @@ class RestaurantLinksCusine(Base):
 
 # RestaurantMenuCategoryItem.__table__.drop(engine)
 # RestaurantMenuCategoryItem.__table__.create(engine)
+# print "Menu tables where created"
 

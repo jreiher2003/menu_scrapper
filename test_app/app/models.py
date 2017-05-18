@@ -87,10 +87,10 @@ class RestaurantLinks(db.Model):
     city_metro_id = db.Column(db.Integer, db.ForeignKey("city_metro.id"), index=True)
     city_metro = db.relationship("CityMetro", foreign_keys=city_metro_id)
     cusine = db.relationship('Cusine', secondary='restaurant_links_cusine', backref=db.backref('restaurant_links', lazy='dynamic', cascade="all, delete-orphan", single_parent=True))
-    # menu = db.relationship("Menu", uselist=False, backref="restaurant_links")
+    menu = db.relationship("Menu", uselist=False, backref="restaurant_links")
 
     @property 
-    def url_slug_menu(self):
+    def url_slug_rest(self):
         if self.neighborhood_name is not None:
             return slugify(self.neighborhood_name)
         return slugify(self.rest_name)
@@ -100,37 +100,43 @@ class Cusine(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False, unique=True)
 
+    @property 
+    def url_slug_cusine(self):
+        return slugify(self.name)
+
 class RestaurantLinksCusine(db.Model):
     __tablename__ = "restaurant_links_cusine"
     id = db.Column(db.Integer, primary_key=True)
     restaurant_links_id = db.Column(db.Integer, db.ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
     cusine_id = db.Column(db.Integer, db.ForeignKey('cusine.id', ondelete='CASCADE'), index=True)
 
-# class Menu(db.Model):
-#     __tablename__ = "menu"
-#     id = db.Column(db.Integer, primary_key=True) 
-#     name = db.Column(db.String)
-#     restaurant_links_id = db.Column(db.Integer, db.ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
+class Menu(db.Model):
+    __tablename__ = "menu"
+    id = db.Column(db.Integer, primary_key=True) 
+    name = db.Column(db.String)
+    restaurant_links_id = db.Column(db.Integer, db.ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
+    category = db.relationship('Category', secondary='restaurant_menu_category', order_by='RestaurantMenuCategory.id', backref=db.backref('menu', lazy='dynamic', cascade='all, delete-orphan', single_parent=True))
+    menu_item = db.relationship('RestaurantMenuCategoryItem', order_by='RestaurantMenuCategoryItem.id', backref=db.backref('menu', cascade='all, delete-orphan', single_parent=True))
 
-# class Category(db.Model):
-#     __tablename__ = "category"
-#     id = db.Column(db.Integer, primary_key=True) 
-#     name = db.Column(db.String)
-#     description = db.Column(db.String)
+class Category(db.Model):
+    __tablename__ = "category"
+    id = db.Column(db.Integer, primary_key=True) 
+    name = db.Column(db.String)
+    description = db.Column(db.String)
 
-# class RestaurantMenuCategory(db.Model):
-#     __tablename__ = "restaurant_menu_category"
-#     id = db.Column(db.Integer, primary_key=True)
-#     restaurant_links_id = db.Column(db.Integer, db.ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
-#     menu_id = db.Column(db.Integer, db.ForeignKey('menu.id', ondelete='CASCADE'), index=True)
-#     category_id = db.Column(db.Integer, db.ForeignKey('category.id', ondelete='CASCADE'), index=True)
+class RestaurantMenuCategory(db.Model):
+    __tablename__ = "restaurant_menu_category"
+    id = db.Column(db.Integer, primary_key=True)
+    restaurant_links_id = db.Column(db.Integer, db.ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
+    menu_id = db.Column(db.Integer, db.ForeignKey('menu.id', ondelete='CASCADE'), index=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id', ondelete='CASCADE'), index=True)
 
-# class RestaurantMenuCategoryItem(db.Model):
-#     __tablename__ = "restaurant_menu_category_item"
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String)
-#     description = db.Column(db.String)
-#     price = db.Column(db.String)
-#     restaurant_links_id = db.Column(db.Integer, db.ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
-#     menu_id = db.Column(db.Integer, db.ForeignKey('menu.id', ondelete='CASCADE'), index=True)
-#     category_id = db.Column(db.Integer, db.ForeignKey('category.id', ondelete='CASCADE'), index=True)
+class RestaurantMenuCategoryItem(db.Model):
+    __tablename__ = "restaurant_menu_category_item"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    description = db.Column(db.String)
+    price = db.Column(db.String)
+    restaurant_links_id = db.Column(db.Integer, db.ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
+    menu_id = db.Column(db.Integer, db.ForeignKey('menu.id', ondelete='CASCADE'), index=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id', ondelete='CASCADE'), index=True)

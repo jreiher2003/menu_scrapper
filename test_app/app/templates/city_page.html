@@ -1,19 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
-
+city_page.html
 <h2>{{ city_name }}</h2>
 <p>number of restaurants: {{ rest_total }}</p>
 
 {% for r in rest %}
-    <a href="{{ url_for('rest_page_city', url_slug_state=url_slug_state, state_id=state_id, url_slug_city=url_slug_city, city_metro_id=city_metro_id, url_slug_rest=r.url_slug_menu, rest_id=r.id) }}">{{ r.rest_name }}</a><br>
+    <a href="{{ url_for('rest_page_city', url_slug_state=url_slug_state, state_id=state_id, url_slug_city=url_slug_city, city_metro_id=city_metro_id, url_slug_rest=r.url_slug_rest, rest_id=r.id) }}">{{ r.rest_name }}</a><br>
     {{ r.address }}<br>
     {{ r.city_ }}, {{ r.state_ }} {{ r.zip_ }}<br>
     {{ r.phone }}<br>
+    Menu: {{ r.text_menu_available }}<br>
       {% for x in r.cusine %}
-       {{ x.name }},
+       <a href="{{ url_for('page_cusine_city', url_slug_state=url_slug_state, state_id=state_id, url_slug_city=url_slug_city, city_metro_id=city_metro_id, url_slug_cusine=x.url_slug_cusine, cusine_id=x.id) }}">{{ x.name }}</a>,{{ x.id }} ,
      {% endfor %}
     <hr>
-    
     <br>
 {% endfor %}
+    <br><br>
+    {% for a,i,c in acc %}
+
+      <a href="{{ url_for('page_cusine_city', url_slug_state=url_slug_state, state_id=state_id, url_slug_city=url_slug_city, city_metro_id=city_metro_id, url_slug_cusine=c, cusine_id=i) }}">{{ a }}</a><br>
+    {% endfor %}
 {% endblock %}

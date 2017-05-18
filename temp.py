@@ -458,6 +458,53 @@ def pop_rest_links():
         session.add(r)
         session.commit()
 
+def pop_text_menu_available():
+    """ 
+    querys restauant links table and updates column text_menu_available if the text Text Menu appears
+    on the page.
+    """
+    update = session.query(RestaurantLinks).filter(RestaurantLinks.menu_url_id != None, menu_available=True).all()
+    pattern = re.compile(r'Text Menu')
+    for u in update:
+        print "********************"
+        print u.id 
+        r = requests.get("http://www.menupix.com/menudirectory/menu.php?id=%s" % u.menu_url_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
+        soup = bs(r.content, "lxml")
+        try:
+            text_menu = soup.find(text=pattern).encode('UTF-8').strip()
+            real_text_menu = text_menu.decode('utf-8').split("|")[1].strip()
+            if real_text_menu == 'Text Menu':
+                print "yes"
+                u.text_menu_available = True 
+                session.add(u)
+                session.commit()
+            else:
+                print "no"
+        except AttributeError:
+            print "ERROR: NoneType object has no attribute encode expect"
+            u.text_menu_available = False 
+            session.add(u)
+            session.commit()
+
+def pop_pdf_menu_url():
+    """ 
+    querys restauant links table/menu_available=True and updates column menu_link_pdf if the text Open Menu in a New Window appears
+    on the page.
+    """
+    update = session.query(RestaurantLinks).filter(RestaurantLinks.menu_url_id != None, RestaurantLinks.menu_available==True).all()
+    pattern = re.compile(r'Open Menu in a New Window')
+    for u in update:
+        r = requests.get("http://www.menupix.com/menudirectory/menu.php?id=%s&type=2" % u.menu_url_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
+        soup = bs(r.content, "lxml")
+        pdf_menu = soup.find('a', text=pattern)
+        if pdf_menu is not None:
+            u.menu_link_pdf = pdf_menu['href']
+            session.add(u)
+            session.commit()
+        else:
+            print "no pdf menu found"
+
+            
 def script_menu_type_1(user_agent, rest_link_id, menu_url_id):
     display = Display(visible=0, size=(800, 800))  
     display.start()
@@ -532,57 +579,25 @@ def script_menu_type_1(user_agent, rest_link_id, menu_url_id):
         browser.quit()
         display.stop()
 
-def pop_text_menu_available():
-    """ 
-    querys restauant links table and updates column text_menu_available if the text Text Menu appears
-    on the page.
-    """
-    update = session.query(RestaurantLinks).filter(RestaurantLinks.menu_url_id != None, menu_available=True).all()
-    pattern = re.compile(r'Text Menu')
-    for u in update:
-        print "********************"
-        print u.id 
-        r = requests.get("http://www.menupix.com/menudirectory/menu.php?id=%s" % u.menu_url_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
-        soup = bs(r.content, "lxml")
-        try:
-            text_menu = soup.find(text=pattern).encode('UTF-8').strip()
-            real_text_menu = text_menu.decode('utf-8').split("|")[1].strip()
-            if real_text_menu == 'Text Menu':
-                print "yes"
-                u.text_menu_available = True 
-                session.add(u)
-                session.commit()
-            else:
-                print "no"
-        except AttributeError:
-            print "ERROR: NoneType object has no attribute encode expect"
-            u.text_menu_available = False 
-            session.add(u)
-            session.commit()
 
-def pop_pdf_menu_url():
-    """ 
-    querys restauant links table/menu_available=True and updates column menu_link_pdf if the text Open Menu in a New Window appears
-    on the page.
-    """
-    update = session.query(RestaurantLinks).filter(RestaurantLinks.menu_url_id != None, RestaurantLinks.menu_available==True).all()
-    pattern = re.compile(r'Open Menu in a New Window')
-    for u in update:
-        r = requests.get("http://www.menupix.com/menudirectory/menu.php?id=%s&type=2" % u.menu_url_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
-        soup = bs(r.content, "lxml")
-        pdf_menu = soup.find('a', text=pattern)
-        if pdf_menu is not None:
-            u.menu_link_pdf = pdf_menu['href']
-            session.add(u)
-            session.commit()
-        else:
-            print "no pdf menu found"
+# def pop_menu_items():
+#     """ queries restauant_links with the text_menu_available = True, and runs script_menu_type_1 function
+#     """
+#     ua = UserAgent()
+#     num = session.query(RestaurantLinks).filter_by(state_='FL').order_by(asc(RestaurantLinks.id)).all() # just gives me text menus. 
+#     fl = 0
+#     for i in num:
+#         if i.text_menu_available == True:
+#             fl += 1 
+#             print i.id
+#             # script_menu_type_1(ua.random, i.id, i.menu_url_id)
+#     print fl
 
 def pop_menu_items():
     """ queries restauant_links with the text_menu_available = True, and runs script_menu_type_1 function
     """
     ua = UserAgent()
-    num = session.query(RestaurantLinks).filter_by(state_='FL', text_menu_available=True).all() # just gives me text menus. 
+    num = session.query(RestaurantLinks).filter_by(state_='FL', text_menu_available=True).limit(10).all() # just gives me text menus. 
     for i in num:
         script_menu_type_1(ua.random, i.id, i.menu_url_id)
         time.sleep(5)
@@ -591,29 +606,7 @@ def pop_menu_items():
         renew_ip()    
         time.sleep(20)
         print "new ip created"
+       
 
-
-def test_run():
-    none = session.query(RestaurantLinks).filter_by(phone=None).order_by(asc(RestaurantLinks.id)).all()
-    none1 = session.query(RestaurantLinks).filter_by(phone=None).count()
-    tmr = 0
-    cr = 0
-    cee = 0
-    at = 0
-    print none1
-    # for n in none:
-    #     try:
-    #         pop_rest_links(n.id)
-    #     except requests.exceptions.TooManyRedirects:
-    #         print "ERROR: too many redirects"
-    #         tmr += 1
-    #     except requests.exceptions.ConnectionError:
-    #         print "ERROR: connection error"
-    #         cr += 1
-    #     except requests.exceptions.ChunkedEncodingError:
-    #         print "ERROR: connection broken incompleted read"
-    #         cee += 1
-    #     except AttributeError:
-    #         print "AttributeError: 'NoneType' object has no attribute 'find'."
-    #         at += 1 
-    # print "tmr:",tmr," cr:",cr, " cee:",cee, " at:",at
+if __name__ == "__main__":
+    pop_menu_items()

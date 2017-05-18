@@ -30,4 +30,21 @@ rest page<br><br>
     {{ rest.county_id }}<br>
     {{ rest.city_metro_id }}<br>
 
+<hr>
+<h1>{{ menu_name.name }}</h2>
+{{ cats }}<br>
+{% for c in cats %}
+    {% for i in c.category %}
+        <b>{{ i.name }}</b><br>
+        {% for x in c.menu_item %}
+            {% if i.id == x.category_id %}
+                {{ x.name }}<br>
+            {% endif %}
+        {% endfor %}
+            <br>
+    {% endfor %}
+{% endfor %}
+
+
+
 {% endblock %}

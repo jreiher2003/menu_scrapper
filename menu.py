@@ -21,8 +21,7 @@ from pyvirtualdisplay import Display
 from sqlalchemy import create_engine
 from sqlalchemy import desc,asc
 from sqlalchemy.orm import sessionmaker
-from models import State, MetroAssoc, CityMetro, County, RestaurantLinks,RestaurantLinksCusine, Cusine
-# Menu, RestaurantMenuCategory, Category, RestaurantMenuCategoryItem
+from models import State, MetroAssoc, CityMetro, County, RestaurantLinks,RestaurantLinksCusine, Cusine, Menu, RestaurantMenuCategory, Category,RestaurantMenuCategoryItem
 from utils import renew_ip, get_current_ip, whats_the_ip
 
 engine = create_engine(os.environ["SCRAPER_URL"])
@@ -762,12 +761,101 @@ def pop_text_menu_available(uid):
             session.add(one)
         session.commit()
 
+def script_menu_type_1(user_agent, rest_link_id, menu_url_id):
+    display = Display(visible=0, size=(800, 800))  
+    display.start()
+    profile=webdriver.FirefoxProfile()
+    profile.set_preference('network.proxy.type', 1)
+    profile.set_preference('network.proxy.socks', '127.0.0.1')
+    profile.set_preference('network.proxy.socks_port', 9050)
+    profile.set_preference('javascript.enabled', True)
+    profile.set_preference("general.useragent.override", user_agent)
+    browser=webdriver.Firefox(profile)
+    url = "http://www.menupix.com/menudirectory/menu.php?id=%s&type=1" % menu_url_id
+    browser.get(url)
+    print browser.current_url
+    # try:
+    #     WebDriverWait(browser, 120).until(EC.visibility_of_element_located((By.ID, 'menusContainer')))
+    #     print browser.current_url
+    #     html = browser.page_source
+    #     soup = bs(html,"lxml")
+    #     table_start = soup.find("table")
+    #     td = table_start.find_all("tr")
+    #     #get and store menu name with restauant link id
+    #     menu_name = [tr.find("strong") for tr in td[0]][1].get_text(strip=True)
+    #     print menu_name, rest_link_id
+    #     m = Menu(name=menu_name, restaurant_links_id=rest_link_id)
+    #     session.add(m)
+    #     session.commit()
+    #     all_menu_items = soup.find('div', {'id':'sp_panes'})
+    #     for l in all_menu_items.find_all(True, {'class': ['sp_st','sp_sd','hstorefrontproduct', 'fn','sp_option', 'sp_description']}):
+    #         if 'sp_st' in l.attrs['class']:
+    #             cat = Category()
+    #             rmc = RestaurantMenuCategory()
+    #             print "_____ Category _________"
+    #             print l.get_text(strip=True)
+    #             cat.name = l.get_text(strip=True)
+    #         if 'sp_sd' in l.attrs['class']:# category description
+    #             print l.get_text(strip=True)
+    #             cat.description = l.get_text(strip=True)
+    #             print "##########################"
+    #             print '\n'
+    #         if 'hstorefrontproduct' in l.attrs['class']:
+    #             print "New Menu Item"
+    #             print "_____________"
+    #             rmci = RestaurantMenuCategoryItem()
+    #         if 'sp_description' in l.attrs['class']:
+    #             rmci_description = l.get_text(strip=True)
+    #             rmci.description = rmci_description
+    #             print rmci_description
+    #             print "\n"
+    #         if 'sp_option' in l.attrs['class']:
+    #             rmci_price = l.get_text(strip=True)
+    #             rmci.price = rmci_price
+    #             print rmci_price
+    #         if 'fn' in l.attrs['class'] and not 'sp_st' in l.attrs['class']:
+    #             rmci_name = l.get_text(strip=True)
+    #             rmci.name = rmci_name
+    #             rmci.restaurant_links_id = rest_link_id 
+    #             rmci.menu_id = m.id 
+    #             rmci.category_id = cat.id 
+    #             print rmci_name
+    #             session.add(rmci)
+    #             session.commit()
+
+    #         session.add(cat)
+    #         session.commit()
+    #         rmc.restaurant_links_id = rest_link_id 
+    #         rmc.menu_id = m.id
+    #         rmc.category_id = cat.id
+    #         session.add(rmc)
+    #         session.commit()
+    # except:
+    #     print "didn't find a text menu"
+    # finally:
+    browser.quit()
+    display.stop()
+
+def pop_menu_items():
+    """ queries restauant_links with the text_menu_available = True, and runs script_menu_type_1 function
+    """
+    ua = UserAgent()
+    num = session.query(RestaurantLinks).filter_by(state_='FL', text_menu_available=True).order_by(asc(RestaurantLinks.id)).limit(10).all() # just gives me text menus. 
+    for i in num:
+        print i.id
+        script_menu_type_1(ua.random, i.id, i.menu_url_id)
+        # time.sleep(5)
+        # get_current_ip(ua.random) 
+        # time.sleep(5)   
+        # renew_ip()    
+        # time.sleep(20)
+        print "new ip created"
 
 
 
-# if __name__ == "__main__":
-#     import time 
-#     t0 = time.time()
+if __name__ == "__main__":
+    import time 
+    t0 = time.time()
 
     # renew_ip()    
     # time.sleep(12) 
@@ -826,9 +914,9 @@ def pop_text_menu_available(uid):
     #     print "for loop: ", i 
     #     pop_rest_links(i)
     # #############################################
-   
-    # end = (time.time() - t0)
-    # print end, ": in seconds", "  ", end/60, ": in minutes"
+    # pop_menu_items()
+    end = (time.time() - t0)
+    print end, ": in seconds", "  ", end/60, ": in minutes"
 
      
 

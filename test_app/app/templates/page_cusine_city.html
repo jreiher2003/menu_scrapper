@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+cusine_page_city.html<br>
+<h2>Cusine Type: {{ cusine_name }}</h2>
+{% for i in rest_c %}
+    <a href="{{ url_for('rest_page_city', url_slug_state=url_slug_state, state_id=state_id, url_slug_city=url_slug_city, city_metro_id=city_metro_id, url_slug_rest=i.url_slug_rest, rest_id=i.id )}}">{{ i.rest_name }}</a><br>
+     {{ i.address }}<br>
+    {{ i.city_ }}, {{ i.state_ }} {{ i.zip_ }}<br>
+    {{ i.phone }}<br>
+    Menu: {{ i.text_menu_available }}<br>
+      {% for x in i.cusine %}
+       <a href="{{ url_for('page_cusine_city', url_slug_state=url_slug_state, state_id=state_id, url_slug_city=url_slug_city, city_metro_id=city_metro_id, url_slug_cusine=x.url_slug_cusine, cusine_id=x.id) }}">{{ x.name }}</a>,{{ x.id }} ,
+     {% endfor %}
+<hr>
+{% endfor %}
+
+
+{% endblock %}
