@@ -100,6 +100,98 @@ def update_text_menu_available():
         except (KeyboardInterrupt, SystemExit):
             raise
 
+def script_menu_type_1(html, rest_link_id, wait_time):#user_agent, 
+    soup = bs(html,"lxml")
+    table_start = soup.find("table")
+    td = table_start.find_all("tr")
+    #get and store menu name with restauant link id
+    menu_name = [tr.find("strong") for tr in td[0]][1].get_text(strip=True)
+    print menu_name, rest_link_id
+    m = Menu(name=menu_name, restaurant_links_id=rest_link_id)
+    session.add(m)
+    session.commit()
+    all_menu_items = soup.find('div', {'id':'sp_panes'})
+    for l in all_menu_items.find_all(True, {'class': ['sp_st','sp_sd','hstorefrontproduct', 'fn','sp_option', 'sp_description']}):
+        if 'sp_st' in l.attrs['class']:
+            cat = Category()
+            rmc = RestaurantMenuCategory()
+            print "_____ Category _________"
+            print l.get_text(strip=True)
+            cat.name = l.get_text(strip=True)
+        if 'sp_sd' in l.attrs['class']:# category description
+            print l.get_text(strip=True)
+            cat.description = l.get_text(strip=True)
+            print "##########################"
+            print '\n'
+        if 'hstorefrontproduct' in l.attrs['class']:
+            print "New Menu Item"
+            print "_____________"
+            rmci = RestaurantMenuCategoryItem()
+        if 'sp_description' in l.attrs['class']:
+            rmci_description = l.get_text(strip=True)
+            rmci.description = rmci_description
+            print rmci_description
+            print "\n"
+        if 'sp_option' in l.attrs['class']:
+            rmci_price = l.get_text(strip=True)
+            rmci.price = rmci_price
+            print rmci_price
+        if 'fn' in l.attrs['class'] and not 'sp_st' in l.attrs['class']:
+            rmci_name = l.get_text(strip=True)
+            rmci.name = rmci_name
+            rmci.restaurant_links_id = rest_link_id 
+            rmci.menu_id = m.id 
+            rmci.category_id = cat.id 
+            print rmci_name
+            session.add(rmci)
+            session.commit()
+        session.add(cat)
+        session.commit()
+        rmc.restaurant_links_id = rest_link_id 
+        rmc.menu_id = m.id
+        rmc.category_id = cat.id
+        session.add(rmc)
+        session.commit()
+
+def pop_menu_items():
+    renew_ip()
+    time.sleep(12)
+    start = raw_input("start: ")
+    end = raw_input("end: ")
+    off = 0
+    wait_time = 200
+    ua = UserAgent()
+    
+    for i in range(int(start),int(end)):
+        rq = session.query(RestaurantLinks).filter_by(id=i).one()
+        off += 1
+        print "read loop: ", off, " rest_id: ", rq.id 
+        if rq.text_menu_available == True:
+            print "text menu is true..."
+            print "restaurant menu id: ",rq.id, " menu_url_id: ",rq.menu_url_id
+            try:
+                display = Display(visible=0, size=(800, 800))  
+                display.start()
+                binary = FirefoxBinary('/usr/bin/firefox')
+                profile=webdriver.FirefoxProfile()
+                profile.set_preference('network.proxy.type', 1)
+                profile.set_preference('network.proxy.socks', '127.0.0.1')
+                profile.set_preference('network.proxy.socks_port', 9050)
+                profile.set_preference('javascript.enabled', True)
+                profile.set_preference("general.useragent.override", ua.firefox)
+                browser=webdriver.Firefox(firefox_profile=profile,firefox_binary=binary)#
+                u = "http://www.menupix.com/menudirectory/menu.php?id=%s&type=1" % rq.menu_url_id
+                browser.get(u)
+                print browser.current_url
+                WebDriverWait(browser, wait_time).until(EC.presence_of_element_located((By.ID, 'menusContainer')))
+                html = browser.page_source
+                script_menu_type_1(html, rq.id, wait_time) 
+                browser.quit()
+                display.stop()
+            except AttributeError: # checks regex value Text Menu on menu page.
+                print "ERROR: NoneType object has no attribute 'find_all"
+            
+
 if __name__ == "__main__":
     import time 
     t0 = time.time()
@@ -119,7 +211,8 @@ if __name__ == "__main__":
     ### pop menu rest_link #####################
     # run_rest_code()
     ############################################
-    update_text_menu_available()
+    # update_text_menu_available()
     #############################################
+    pop_menu_items()
     end = (time.time() - t0)
     print end, ": in seconds", "  ", end/60, ": in minutes"
