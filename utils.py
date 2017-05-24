@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup as bs
 
 def renew_ip():
     with Controller.from_port(port = 9051) as controller:
-        controller.authenticate()
+        controller.authenticate(password="finn7797")
         controller.signal(Signal.NEWNYM)
         controller.close()
 
