@@ -174,7 +174,7 @@ def pop_menu_items():
             try:
                 display = Display(visible=0, size=(800, 800))  
                 display.start()
-                binary = FirefoxBinary('/usr/local/firefox/firefox')
+                binary = FirefoxBinary('/usr/bin/firefox')
                 profile=webdriver.FirefoxProfile()
                 profile.set_preference('network.proxy.type', 1)
                 profile.set_preference('network.proxy.socks', '127.0.0.1')
