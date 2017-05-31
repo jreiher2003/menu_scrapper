@@ -5,6 +5,7 @@ import re
 from collections import OrderedDict
 import math
 import string
+import psutil
 from pprint import pprint
 import requests 
 from bs4 import BeautifulSoup as bs
@@ -191,6 +192,9 @@ def pop_menu_items():
                 script_menu_type_1(html, rq.id, wait_time) 
                 browser.quit()
                 display.stop()
+                for proc in psutil.process_iter():
+                    if proc.name() == 'firefox':
+                        proc.kill()
             except AttributeError: # checks regex value Text Menu on menu page.
                 print "ERROR: NoneType object has no attribute 'find_all"
             # except WebDriverException:
@@ -201,7 +205,7 @@ def pop_menu_items():
             #     time.sleep(12)
             #     display = Display(visible=0, size=(800, 800))  
             #     display.start()
-            #     binary = FirefoxBinary('/usr/local/firefox/firefox')
+            #     binary = FirefoxBinary('/usr/bin/firefox')
             #     profile=webdriver.FirefoxProfile()
             #     profile.set_preference('network.proxy.type', 1)
             #     profile.set_preference('network.proxy.socks', '127.0.0.1')
