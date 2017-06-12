@@ -112,6 +112,7 @@ def script_menu_type_1(html, rest_link_id, wait_time):#user_agent,
     m = Menu(name=menu_name, restaurant_links_id=rest_link_id)
     session.add(m)
     session.commit()
+    print "menu id is: ", m.id
     all_menu_items = soup.find('div', {'id':'sp_panes'})
     for l in all_menu_items.find_all(True, {'class': ['sp_st','sp_sd','hstorefrontproduct', 'fn','sp_option', 'sp_description']}):
         if 'sp_st' in l.attrs['class']:
@@ -132,7 +133,7 @@ def script_menu_type_1(html, rest_link_id, wait_time):#user_agent,
         if 'sp_description' in l.attrs['class']:
             rmci_description = l.get_text(strip=True)
             rmci.description = rmci_description
-            print rmci_description
+            print rmci_description 
             print "\n"
         if 'sp_option' in l.attrs['class']:
             rmci_price = l.get_text(strip=True)
@@ -147,8 +148,11 @@ def script_menu_type_1(html, rest_link_id, wait_time):#user_agent,
             print rmci_name
             session.add(rmci)
             session.commit()
+            print "Restaurant Menu Category Item: ", rmci.id
         session.add(cat)
         session.commit()
+        print "category id: ", cat.id
+        print "\n"
         rmc.restaurant_links_id = rest_link_id 
         rmc.menu_id = m.id
         rmc.category_id = cat.id
@@ -162,6 +166,7 @@ def pop_menu_items():
     start = raw_input("start: ")
     end = raw_input("end: ")
     off = 0
+    counter_menu = 0
     wait_time = 200
     ua = UserAgent()
     
@@ -172,6 +177,8 @@ def pop_menu_items():
         if rq.text_menu_available == True:
             print "text menu is true..."
             print "restaurant menu id: ",rq.id, " menu_url_id: ",rq.menu_url_id
+            counter_menu += 1
+            print "number of menu's scraped: ", counter_menu
             try:
                 display = Display(visible=0, size=(800, 800))  
                 display.start()
