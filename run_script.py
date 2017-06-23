@@ -204,40 +204,8 @@ def pop_menu_items():
                         proc.kill()
             except AttributeError: # checks regex value Text Menu on menu page.
                 print "ERROR: NoneType object has no attribute 'find_all"
-            # except WebDriverException:
-            #     print "WebDriverException: going to try again in 3,2,1.."
-            #     time.sleep(8)
-            #     renew_ip()
-            #     print "ip renewed"
-            #     time.sleep(12)
-            #     display = Display(visible=0, size=(800, 800))  
-            #     display.start()
-            #     binary = FirefoxBinary('/usr/bin/firefox')
-            #     profile=webdriver.FirefoxProfile()
-            #     profile.set_preference('network.proxy.type', 1)
-            #     profile.set_preference('network.proxy.socks', '127.0.0.1')
-            #     profile.set_preference('network.proxy.socks_port', 9050)
-            #     profile.set_preference('javascript.enabled', True)
-            #     profile.set_preference('marionette', False)
-            #     profile.set_preference("general.useragent.override", ua.firefox)
-            #     browser=webdriver.Firefox(firefox_profile=profile,firefox_binary=binary)#
-            #     u = "http://www.menupix.com/menudirectory/menu.php?id=%s&type=1" % rq.menu_url_id
-            #     browser.get(u)
-            #     print browser.current_url
-            #     WebDriverWait(browser, wait_time).until(EC.presence_of_element_located((By.ID, 'menusContainer')))
-            #     html = browser.page_source
-            #     script_menu_type_1(html, rq.id, wait_time) 
-            #     browser.quit()
-            #     display.stop()
-            
-            # except TimeoutException:
-            #     print "TimeoutException: going to try again in 3,2,1..."
-            #     time.sleep(8)
-            #     renew_ip()
-            #     print "ip renewed"
-            #     time.sleep(12)
-            #     wait_time = 300
-            #     script_menu_type_1(rq.id, rq.menu_url_id, wait_time)#ua.random, 
+    print "read loop: ", off, " rest_id: ", rq.id
+           
 
 
 if __name__ == "__main__":
