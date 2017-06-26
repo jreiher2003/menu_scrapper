@@ -111,7 +111,7 @@ def script_menu_type_1(html, rest_link_id, wait_time):#user_agent,
     print menu_name, rest_link_id
     m = Menu(name=menu_name, restaurant_links_id=rest_link_id)
     session.add(m)
-    session.commit()
+    # session.commit()
     print "menu id is: ", m.id
     all_menu_items = soup.find('div', {'id':'sp_panes'})
     for l in all_menu_items.find_all(True, {'class': ['sp_st','sp_sd','hstorefrontproduct', 'fn','sp_option', 'sp_description']}):
@@ -147,10 +147,10 @@ def script_menu_type_1(html, rest_link_id, wait_time):#user_agent,
             rmci.category_id = cat.id 
             print rmci_name
             session.add(rmci)
-            session.commit()
+            # session.commit()
             print "Restaurant Menu Category Item: ", rmci.id
         session.add(cat)
-        session.commit()
+        # session.commit()
         print "category id: ", cat.id
         print "\n"
         rmc.restaurant_links_id = rest_link_id 
