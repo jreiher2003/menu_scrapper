@@ -9,3 +9,6 @@ python_org_search.py
 sql/*
 .vagrant/
 Vagrantfile
+*.png
+*.jpg
+*.JPG

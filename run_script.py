@@ -118,23 +118,17 @@ def script_menu_type_1(html, rest_link_id, wait_time):#user_agent,
         if 'sp_st' in l.attrs['class']:
             cat = Category()
             rmc = RestaurantMenuCategory()
-            print "_____ Category _________"
             print l.get_text(strip=True)
             cat.name = l.get_text(strip=True)
         if 'sp_sd' in l.attrs['class']:# category description
             print l.get_text(strip=True)
             cat.description = l.get_text(strip=True)
-            print "##########################"
-            print '\n'
         if 'hstorefrontproduct' in l.attrs['class']:
-            print "New Menu Item"
-            print "_____________"
             rmci = RestaurantMenuCategoryItem()
         if 'sp_description' in l.attrs['class']:
             rmci_description = l.get_text(strip=True)
             rmci.description = rmci_description
             print rmci_description 
-            print "\n"
         if 'sp_option' in l.attrs['class']:
             rmci_price = l.get_text(strip=True)
             rmci.price = rmci_price
@@ -148,11 +142,7 @@ def script_menu_type_1(html, rest_link_id, wait_time):#user_agent,
             print rmci_name
             session.add(rmci)
             # session.commit()
-            print "Restaurant Menu Category Item: ", rmci.id
         session.add(cat)
-        # session.commit()
-        print "category id: ", cat.id
-        print "\n"
         rmc.restaurant_links_id = rest_link_id 
         rmc.menu_id = m.id
         rmc.category_id = cat.id
@@ -204,7 +194,7 @@ def pop_menu_items():
                         proc.kill()
             except AttributeError: # checks regex value Text Menu on menu page.
                 print "ERROR: NoneType object has no attribute 'find_all"
-    print "read loop: ", off, " rest_id: ", rq.id
+    print "read loop: ", off, " rest_id: ", rq.id, "number of menu's scraped: ", counter_menu
            
 
 
