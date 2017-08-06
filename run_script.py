@@ -152,7 +152,7 @@ def script_menu_type_1(html, rest_link_id, wait_time):#user_agent,
 
 def pop_menu_items():
     renew_ip()
-    time.sleep(12)
+    time.sleep(4)
     start = raw_input("start: ")
     end = raw_input("end: ")
     off = 0
@@ -170,6 +170,34 @@ def pop_menu_items():
             counter_menu += 1
             print "number of menu's scraped: ", counter_menu
             try:
+                display = Display(visible=0, size=(800, 800))  
+                display.start()
+                binary = FirefoxBinary('/usr/bin/firefox')
+                profile=webdriver.FirefoxProfile()
+                profile.set_preference('network.proxy.type', 1)
+                profile.set_preference('network.proxy.socks', '127.0.0.1')
+                profile.set_preference('network.proxy.socks_port', 9050)
+                profile.set_preference('javascript.enabled', True)
+                profile.set_preference('marionette', False)
+                profile.set_preference("general.useragent.override", ua.firefox)
+                browser=webdriver.Firefox(firefox_profile=profile,firefox_binary=binary)#
+                u = "http://www.menupix.com/menudirectory/menu.php?id=%s&type=1" % rq.menu_url_id
+                browser.get(u)
+                print browser.current_url
+                WebDriverWait(browser, wait_time).until(EC.presence_of_element_located((By.ID, 'menusContainer')))
+                html = browser.page_source
+                script_menu_type_1(html, rq.id, wait_time) 
+                browser.quit()
+                display.stop()
+                for proc in psutil.process_iter():
+                    if proc.name() == 'firefox':
+                        proc.kill()
+            except WebDriverException:
+                print "WebDriverException: going to try again in 3,2,1.."
+                time.sleep(8)
+                renew_ip()
+                print "ip renewed"
+                time.sleep(12)
                 display = Display(visible=0, size=(800, 800))  
                 display.start()
                 binary = FirefoxBinary('/usr/bin/firefox')
