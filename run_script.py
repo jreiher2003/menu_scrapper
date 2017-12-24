@@ -184,14 +184,18 @@ def pop_menu_items():
                 u = "http://www.menupix.com/menudirectory/menu.php?id=%s&type=1" % rq.menu_url_id
                 browser.get(u)
                 print browser.current_url
-                WebDriverWait(browser, wait_time).until(EC.presence_of_element_located((By.ID, 'menusContainer')))
-                html = browser.page_source
-                script_menu_type_1(html, rq.id, wait_time) 
-                browser.quit()
-                display.stop()
-                for proc in psutil.process_iter():
-                    if proc.name() == 'firefox':
-                        proc.kill()
+                if browser.current_url != "http://www.menupix.com/":
+                    
+                    WebDriverWait(browser, wait_time).until(EC.presence_of_element_located((By.ID, 'menusContainer')))
+                    html = browser.page_source
+                    script_menu_type_1(html, rq.id, wait_time) 
+                    browser.quit()
+                    display.stop()
+                    for proc in psutil.process_iter():
+                        if proc.name() == 'firefox':
+                            proc.kill()
+                else:
+                    pass
             except WebDriverException:
                 print "WebDriverException: going to try again in 3,2,1.."
                 time.sleep(8)
