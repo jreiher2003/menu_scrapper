@@ -114,40 +114,43 @@ def script_menu_type_1(html, rest_link_id, wait_time):#user_agent,
     session.commit()
     print "menu id is: ", m.id
     all_menu_items = soup.find('div', {'id':'sp_panes'})
-    for l in all_menu_items.find_all(True, {'class': ['sp_st','sp_sd','hstorefrontproduct', 'fn','sp_option', 'sp_description']}):
-        if 'sp_st' in l.attrs['class']:
-            cat = Category()
-            rmc = RestaurantMenuCategory()
-            print l.get_text(strip=True)
-            cat.name = l.get_text(strip=True)
-        if 'sp_sd' in l.attrs['class']:# category description
-            print l.get_text(strip=True)
-            cat.description = l.get_text(strip=True)
-        if 'hstorefrontproduct' in l.attrs['class']:
-            rmci = RestaurantMenuCategoryItem()
-        if 'sp_description' in l.attrs['class']:
-            rmci_description = l.get_text(strip=True)
-            rmci.description = rmci_description
-            print rmci_description 
-        if 'sp_option' in l.attrs['class']:
-            rmci_price = l.get_text(strip=True)
-            rmci.price = rmci_price
-            print rmci_price
-        if 'fn' in l.attrs['class'] and not 'sp_st' in l.attrs['class']:
-            rmci_name = l.get_text(strip=True)
-            rmci.name = rmci_name
-            rmci.restaurant_links_id = rest_link_id 
-            rmci.menu_id = m.id 
-            rmci.category_id = cat.id 
-            print rmci_name
-            session.add(rmci)
+    if all_menu_items:
+        for l in all_menu_items.find_all(True, {'class': ['sp_st','sp_sd','hstorefrontproduct', 'fn','sp_option', 'sp_description']}):
+            if 'sp_st' in l.attrs['class']:
+                cat = Category()
+                rmc = RestaurantMenuCategory()
+                print l.get_text(strip=True)
+                cat.name = l.get_text(strip=True)
+            if 'sp_sd' in l.attrs['class']:# category description
+                print l.get_text(strip=True)
+                cat.description = l.get_text(strip=True)
+            if 'hstorefrontproduct' in l.attrs['class']:
+                rmci = RestaurantMenuCategoryItem()
+            if 'sp_description' in l.attrs['class']:
+                rmci_description = l.get_text(strip=True)
+                rmci.description = rmci_description
+                print rmci_description 
+            if 'sp_option' in l.attrs['class']:
+                rmci_price = l.get_text(strip=True)
+                rmci.price = rmci_price
+                print rmci_price
+            if 'fn' in l.attrs['class'] and not 'sp_st' in l.attrs['class']:
+                rmci_name = l.get_text(strip=True)
+                rmci.name = rmci_name
+                rmci.restaurant_links_id = rest_link_id 
+                rmci.menu_id = m.id 
+                rmci.category_id = cat.id 
+                print rmci_name
+                session.add(rmci)
+                session.commit()
+            session.add(cat)
+            rmc.restaurant_links_id = rest_link_id 
+            rmc.menu_id = m.id
+            rmc.category_id = cat.id
+            session.add(rmc)
             session.commit()
-        session.add(cat)
-        rmc.restaurant_links_id = rest_link_id 
-        rmc.menu_id = m.id
-        rmc.category_id = cat.id
-        session.add(rmc)
-        session.commit()
+    else:
+        print "THIS IS YOUR EDIT ALL_MENU_ITEMS WERE NONE"
 
 
 def pop_menu_items():
