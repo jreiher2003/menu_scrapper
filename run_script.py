@@ -195,25 +195,25 @@ def pop_menu_items():
                     u = "http://www.menupix.com/menudirectory/menu.php?id=%s&type=1" % rq.menu_url_id
                     browser.get(u)
                     print browser.current_url
-                    finished = 1
-                except:
+                    if browser.current_url != "http://www.menupix.com/":
+                        WebDriverWait(browser, wait_time).until(EC.presence_of_element_located((By.ID, 'menusContainer')))
+                        html = browser.page_source
+                        script_menu_type_1(html, rq.id, wait_time) 
+                        finished = 1
+                        browser.quit()
+                        display.stop()
+                        for proc in psutil.process_iter():
+                            if proc.name() == 'firefox':
+                                proc.kill()
+                    else:
+                        print "redirected to www.menupix.com"
+                        for proc in psutil.process_iter():
+                            if proc.name() == 'firefox':
+                                proc.kill()
+                except TimeoutException:
                     print "EXCEPTION: URL of SCRAPER is trying again. going to sleep for 15 seconds"
                     time.sleep(15)
-
-            if browser.current_url != "http://www.menupix.com/":
-                WebDriverWait(browser, wait_time).until(EC.presence_of_element_located((By.ID, 'menusContainer')))
-                html = browser.page_source
-                script_menu_type_1(html, rq.id, wait_time) 
-                browser.quit()
-                display.stop()
-                for proc in psutil.process_iter():
-                    if proc.name() == 'firefox':
-                        proc.kill()
-            else:
-                print "redirected to www.menupix.com"
-                for proc in psutil.process_iter():
-                    if proc.name() == 'firefox':
-                        proc.kill()
+            
                 # except WebDriverException:
                 #     print "WebDriverException: going to try again in 3,2,1.."
                 #     time.sleep(8)
