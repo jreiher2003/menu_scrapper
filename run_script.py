@@ -214,9 +214,9 @@ def pop_menu_items():
                     print "EXCEPTION: URL of SCRAPER is trying again. going to sleep for 15 seconds"
                     time.sleep(15)
             
-                # except WebDriverException:
-                #     print "WebDriverException: going to try again in 3,2,1.."
-                #     time.sleep(8)
+                except WebDriverException:
+                    print "WebDriverException: going to try again in 3,2,1.."
+                    time.sleep(8)
                 #     renew_ip()
                 #     print "ip renewed"
                 #     time.sleep(12)
