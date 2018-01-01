@@ -175,63 +175,75 @@ def pop_menu_items():
             print "restaurant menu id: ",rq.id, " menu_url_id: ",rq.menu_url_id
             counter_menu += 1
             print "number of menu's scraped: ", counter_menu
-            try:
-                display = Display(visible=0, size=(800, 800))  
-                display.start()
-                binary = FirefoxBinary('/usr/bin/firefox')
-                profile=webdriver.FirefoxProfile()
-                profile.set_preference('network.proxy.type', 1)
-                profile.set_preference('network.proxy.socks', '127.0.0.1')
-                profile.set_preference('network.proxy.socks_port', 9050)
-                profile.set_preference('javascript.enabled', True)
-                profile.set_preference('marionette', False)
-                profile.set_preference("general.useragent.override", ua.firefox)
-                browser=webdriver.Firefox(firefox_profile=profile,firefox_binary=binary)#
-                u = "http://www.menupix.com/menudirectory/menu.php?id=%s&type=1" % rq.menu_url_id
-                browser.get(u)
-                print browser.current_url
-                if browser.current_url != "http://www.menupix.com/":
-                    
-                    WebDriverWait(browser, wait_time).until(EC.presence_of_element_located((By.ID, 'menusContainer')))
-                    html = browser.page_source
-                    script_menu_type_1(html, rq.id, wait_time) 
-                    browser.quit()
-                    display.stop()
-                    for proc in psutil.process_iter():
-                        if proc.name() == 'firefox':
-                            proc.kill()
-                else:
-                    pass
-            except WebDriverException:
-                print "WebDriverException: going to try again in 3,2,1.."
-                time.sleep(8)
-                renew_ip()
-                print "ip renewed"
-                time.sleep(12)
-                display = Display(visible=0, size=(800, 800))  
-                display.start()
-                binary = FirefoxBinary('/usr/bin/firefox')
-                profile=webdriver.FirefoxProfile()
-                profile.set_preference('network.proxy.type', 1)
-                profile.set_preference('network.proxy.socks', '127.0.0.1')
-                profile.set_preference('network.proxy.socks_port', 9050)
-                profile.set_preference('javascript.enabled', True)
-                profile.set_preference('marionette', False)
-                profile.set_preference("general.useragent.override", ua.firefox)
-                browser=webdriver.Firefox(firefox_profile=profile,firefox_binary=binary)#
-                u = "http://www.menupix.com/menudirectory/menu.php?id=%s&type=1" % rq.menu_url_id
-                browser.get(u)
-                print browser.current_url
-                WebDriverWait(browser, wait_time).until(EC.presence_of_element_located((By.ID, 'menusContainer')))
-                html = browser.page_source
-                script_menu_type_1(html, rq.id, wait_time) 
-                browser.quit()
-                display.stop()
+            finished = 0
+            while finished == 0:
                 for proc in psutil.process_iter():
                     if proc.name() == 'firefox':
                         proc.kill()
-            except AttributeError: # checks regex value Text Menu on menu page.
-                print "ERROR: NoneType object has no attribute 'find_all"
+                try:
+                    display = Display(visible=0, size=(800, 800))  
+                    display.start()
+                    binary = FirefoxBinary('/usr/bin/firefox')
+                    profile=webdriver.FirefoxProfile()
+                    profile.set_preference('network.proxy.type', 1)
+                    profile.set_preference('network.proxy.socks', '127.0.0.1')
+                    profile.set_preference('network.proxy.socks_port', 9050)
+                    profile.set_preference('javascript.enabled', True)
+                    profile.set_preference('marionette', False)
+                    profile.set_preference("general.useragent.override", ua.firefox)
+                    browser=webdriver.Firefox(firefox_profile=profile,firefox_binary=binary)#
+                    u = "http://www.menupix.com/menudirectory/menu.php?id=%s&type=1" % rq.menu_url_id
+                    browser.get(u)
+                    print browser.current_url
+                    finished = 1
+                    if browser.current_url != "http://www.menupix.com/":
+                        
+                        WebDriverWait(browser, wait_time).until(EC.presence_of_element_located((By.ID, 'menusContainer')))
+                        html = browser.page_source
+                        script_menu_type_1(html, rq.id, wait_time) 
+                        browser.quit()
+                        display.stop()
+                        for proc in psutil.process_iter():
+                            if proc.name() == 'firefox':
+                                proc.kill()
+                    else:
+                        print "redirected to www.menupix.com"
+                        for proc in psutil.process_iter():
+                            if proc.name() == 'firefox':
+                                proc.kill()
+                except:
+                    print "EXCEPTION: URL of SCRAPER is trying again. going to sleep for 15 seconds"
+                    time.sleep(15)
+                # except WebDriverException:
+                #     print "WebDriverException: going to try again in 3,2,1.."
+                #     time.sleep(8)
+                #     renew_ip()
+                #     print "ip renewed"
+                #     time.sleep(12)
+                #     display = Display(visible=0, size=(800, 800))  
+                #     display.start()
+                #     binary = FirefoxBinary('/usr/bin/firefox')
+                #     profile=webdriver.FirefoxProfile()
+                #     profile.set_preference('network.proxy.type', 1)
+                #     profile.set_preference('network.proxy.socks', '127.0.0.1')
+                #     profile.set_preference('network.proxy.socks_port', 9050)
+                #     profile.set_preference('javascript.enabled', True)
+                #     profile.set_preference('marionette', False)
+                #     profile.set_preference("general.useragent.override", ua.firefox)
+                #     browser=webdriver.Firefox(firefox_profile=profile,firefox_binary=binary)#
+                #     u = "http://www.menupix.com/menudirectory/menu.php?id=%s&type=1" % rq.menu_url_id
+                #     browser.get(u)
+                #     print browser.current_url
+                #     WebDriverWait(browser, wait_time).until(EC.presence_of_element_located((By.ID, 'menusContainer')))
+                #     html = browser.page_source
+                #     script_menu_type_1(html, rq.id, wait_time) 
+                #     browser.quit()
+                #     display.stop()
+                #     for proc in psutil.process_iter():
+                #         if proc.name() == 'firefox':
+                #             proc.kill()
+                # except AttributeError: # checks regex value Text Menu on menu page.
+                #     print "ERROR: NoneType object has no attribute 'find_all"
     print "read loop: ", off, " rest_id: ", rq.id, "number of menu's scraped: ", counter_menu
            
 
