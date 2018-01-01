@@ -207,6 +207,7 @@ def pop_menu_items():
                                 proc.kill()
                     else:
                         print "redirected to www.menupix.com"
+                        finished = 1
                         for proc in psutil.process_iter():
                             if proc.name() == 'firefox':
                                 proc.kill()
