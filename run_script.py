@@ -165,6 +165,9 @@ def pop_menu_items():
     
     for i in range(int(start),int(end)):
         rq = session.query(RestaurantLinks).filter_by(id=i).one()
+        for proc in psutil.process_iter():
+            if proc.name() == 'firefox':
+                proc.kill()
         off += 1
         print "read loop: ", off, " rest_id: ", rq.id 
         if rq.text_menu_available == True:
