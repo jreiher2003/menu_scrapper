@@ -3,8 +3,9 @@ from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy import Column, Date, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
+from slugify import slugify
 
-engine = create_engine(os.environ["SCRAPER_URL"])
+engine = create_engine(os.environ["SCRAPER_URL_TEST"])
 Base = declarative_base()
 
 class State(Base):
@@ -12,39 +13,31 @@ class State(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     abbr = Column(String)
-    state_link = Column(String)
-
-class MetroAssoc(Base):
-    __tablename__ = "metro_assoc" 
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    metro_link = Column(String) 
-    state_id = Column(Integer, ForeignKey("state.id"), index=True)
-    state = relationship("State", foreign_keys=state_id)
+    counties = relationship("County")
+    cities = relationship("City")
+    restaurants = relationship("Restaurant")
 
 class County(Base):
     __tablename__ = "county"
     id = Column(Integer, primary_key=True)
     name = Column(String)
     state_id = Column(Integer, ForeignKey("state.id"), index=True)
-    state = relationship("State", foreign_keys=state_id) 
-
-class CityMetro(Base):
-    __tablename__ = "city_metro" 
+    cities = relationship("City")
+    restaurants = relationship("Restaurant")
+     
+class City(Base):
+    __tablename__ = "city" 
     id = Column(Integer, primary_key=True)
     city_name = Column(String)
     neighborhood_name = Column(String)
-    city_link = Column(String)
     metro_area = Column(Boolean)
     r_total = Column(Integer)
     state_id = Column(Integer, ForeignKey("state.id"), index=True)
-    state = relationship("State", foreign_keys=state_id)
     county_id = Column(Integer, ForeignKey("county.id"), index=True)
-    county = relationship("County", foreign_keys=county_id) 
-
-
-class RestaurantLinks(Base):
-    __tablename__ = "restaurant_links"
+    restaurants = relationship("Restaurant")
+    
+class Restaurant(Base):
+    __tablename__ = "restaurant"
     id = Column(Integer, primary_key=True)
     rest_name = Column(String)
     rest_link = Column(String)
@@ -73,54 +66,64 @@ class RestaurantLinks(Base):
     good_for_kids = Column(Boolean)
     menu_url_id = Column(String)
     menu_link_pdf = Column(String)
-    state_id = Column(Integer, ForeignKey("state.id"), index=True)
-    state = relationship("State", foreign_keys=state_id)
-    county_id = Column(Integer, ForeignKey("county.id"), index=True)
-    county = relationship("County", foreign_keys=county_id) 
-    city_metro_id = Column(Integer, ForeignKey("city_metro.id"), index=True)
-    city_metro = relationship("CityMetro", foreign_keys=city_metro_id)
-    # cusine = relationship('Cusine', secondary='restaurant_links_cusine', backref=backref('restaurant_links', lazy='dynamic', cascade="all, delete-orphan", single_parent=True))
-    # menu = relationship("Menu", uselist=False, backref="restaurant_links")
 
+    state_id = Column(Integer, ForeignKey("state.id"), index=True)
+    county_id = Column(Integer, ForeignKey("county.id"), index=True)
+    city_id = Column(Integer, ForeignKey("city.id"), index=True)
+    menu = relationship("Menu")
+    
 class Cusine(Base):
     __tablename__ = "cusine"
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False, unique=True)
 
-class RestaurantLinksCusine(Base):
-    __tablename__ = "restaurant_links_cusine"
+class RestaurantCusine(Base):
+    __tablename__ = "restaurant_cusine"
     id = Column(Integer, primary_key=True)
-    restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
+    restaurant_id = Column(Integer, ForeignKey('restaurant.id', ondelete='CASCADE'), index=True)
     cusine_id = Column(Integer, ForeignKey('cusine.id', ondelete='CASCADE'), index=True)
 
 class Menu(Base):
     __tablename__ = "menu"
     id = Column(Integer, primary_key=True) 
     name = Column(String)
-    restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
+    restaurant_id = Column(Integer, ForeignKey('restaurant.id', ondelete='CASCADE'), index=True)
+    menu_section = relationship("Section", secondary="menu_section")
 
-class Category(Base):
-    __tablename__ = "category"
+class Section(Base):
+    __tablename__ = "section"
     id = Column(Integer, primary_key=True) 
     name = Column(String)
     description = Column(String)
+    items = relationship("MenuItem")
 
-class RestaurantMenuCategory(Base):
-    __tablename__ = "restaurant_menu_category"
+class MenuSection(Base):
+    __tablename__ = "menu_section"
     id = Column(Integer, primary_key=True)
-    restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
     menu_id = Column(Integer, ForeignKey('menu.id', ondelete='CASCADE'), index=True)
-    category_id = Column(Integer, ForeignKey('category.id', ondelete='CASCADE'), index=True)
-
-class RestaurantMenuCategoryItem(Base):
-    __tablename__ = "restaurant_menu_category_item"
+    section_id = Column(Integer, ForeignKey('section.id', ondelete='CASCADE'), index=True)
+    
+class MenuItem(Base):
+    __tablename__ = "menu_item"
     id = Column(Integer, primary_key=True)
     name = Column(String)
     description = Column(String)
-    price = Column(String)
-    restaurant_links_id = Column(Integer, ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
-    menu_id = Column(Integer, ForeignKey('menu.id', ondelete='CASCADE'), index=True)
-    category_id = Column(Integer, ForeignKey('category.id', ondelete='CASCADE'), index=True)
+    section_id = Column(Integer, ForeignKey('section.id', ondelete='CASCADE'), index=True)
+    price_items = relationship("ItemPrice", secondary="menu_item_price")
+
+class ItemPrice(Base):
+    __tablename__ = "item_price"
+    id = Column(Integer, primary_key=True)
+    price_title = Column(String)
+    price_value = Column(String)
+    addon_title = Column(String)
+    addon_value = Column(String) 
+
+class MenuItemPrice(Base):
+    __tablename__ = "menu_item_price"
+    id = Column(Integer, primary_key=True) 
+    menu_item_id = Column(Integer, ForeignKey('menu_item.id', ondelete='CASCADE'), index=True)
+    item_price_id = Column(Integer, ForeignKey('item_price.id', ondelete='CASCADE'), index=True)
 
 # Base.metadata.drop_all(engine)
 # print "all tables dropped"
@@ -133,28 +136,32 @@ class RestaurantMenuCategoryItem(Base):
 # CityMetro.__table__.create(engine)
 
 
-# RestaurantLinks.__table__.drop(engine)
-# RestaurantLinks.__table__.create(engine)
+# Restaurant.__table__.drop(engine)
+# Restaurant.__table__.create(engine)
 
 # Cusine.__table__.drop(engine)
 #Cusine.__table__.create(engine)
 
-# RestaurantLinksCusine.__table__.drop(engine)
-#RestaurantLinksCusine.__table__.create(engine)
+# RestaurantCusine.__table__.drop(engine)
+#RestaurantCusine.__table__.create(engine)
 
 #################################################
 #################################################
+# Menu.__table__.drop(engine, checkfirst=True)
+# Menu.__table__.create(engine, checkfirst=True)
+# Section.__table__.drop(engine, checkfirst=True)
+# Section.__table__.create(engine, checkfirst=True)
+# MenuSection.__table__.drop(engine, checkfirst=True)
+# MenuSection.__table__.create(engine, checkfirst=True)
 
-# Menu.__table__.drop(engine)
-# Menu.__table__.create(engine)
 
-# Category.__table__.drop(engine)
-# Category.__table__.create(engine)
 
-# RestaurantMenuCategory.__table__.drop(engine)
-# RestaurantMenuCategory.__table__.create(engine)
 
-# RestaurantMenuCategoryItem.__table__.drop(engine)
-# RestaurantMenuCategoryItem.__table__.create(engine)
+# MenuItem.__table__.drop(engine, checkfirst=True)
+# MenuItem.__table__.create(engine, checkfirst=True)
+# ItemPrice.__table__.drop(engine, checkfirst=True)
+# ItemPrice.__table__.create(engine, checkfirst=True)
+# MenuItemPrice.__table__.drop(engine, checkfirst=True)
+# MenuItemPrice.__table__.create(engine, checkfirst=True)
 # print "menu tables created..."
 
