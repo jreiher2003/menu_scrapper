@@ -76,6 +76,8 @@ class Restaurant(db.Model):
     state_id = db.Column(db.Integer, db.ForeignKey("state.id"), index=True)
     county_id = db.Column(db.Integer, db.ForeignKey("county.id"), index=True)
     city_id = db.Column(db.Integer, db.ForeignKey("city.id"), index=True)
+    cusine = db.relationship('Cusine', secondary='restaurant_cusine', backref=db.backref('restaurant', lazy='dynamic', cascade="all, delete-orphan", single_parent=True))
+    rlc = db.relationship('RestaurantCusine', backref=db.backref('restaurant', cascade="all, delete-orphan", single_parent=True))
 
     @property 
     def url_slug_rest(self):
@@ -86,11 +88,16 @@ class Cusine(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False, unique=True)
 
-class RestaurantLinksCusine(db.Model):
-    __tablename__ = "restaurant_links_cusine"
+    @property 
+    def url_slug_cusine(self):
+        return slugify(self.name)
+
+class RestaurantCusine(db.Model):
+    __tablename__ = "restaurant_cusine"
     id = db.Column(db.Integer, primary_key=True)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id', ondelete='CASCADE'), index=True)
     cusine_id = db.Column(db.Integer, db.ForeignKey('cusine.id', ondelete='CASCADE'), index=True)
+    cusine = db.relationship('Cusine', backref=db.backref('restaurant_cusine', lazy='dynamic', cascade="all, delete-orphan"))
 
 # class Menu(db.Model):
 #     __tablename__ = "menu"
