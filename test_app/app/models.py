@@ -7,51 +7,44 @@ class State(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     abbr = db.Column(db.String)
-    state_link = db.Column(db.String)
+    counties = db.relationship("County")
+    cities = db.relationship("City")
+    restaurants = db.relationship("Restaurant")
 
     @property 
     def url_slug_state(self):
         return slugify(self.name)
-
-class MetroAssoc(db.Model):
-    __tablename__ = "metro_assoc" 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    metro_link = db.Column(db.String) 
-    state_id = db.Column(db.Integer, db.ForeignKey("state.id"), index=True)
-    state = db.relationship("State", foreign_keys=state_id)
 
 class County(db.Model):
     __tablename__ = "county"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     state_id = db.Column(db.Integer, db.ForeignKey("state.id"), index=True)
-    state = db.relationship("State", foreign_keys=state_id) 
+    cities = db.relationship("City")
+    restaurants = db.relationship("Restaurant")
 
     @property 
     def url_slug_county(self):
         return slugify(self.name)
 
-class CityMetro(db.Model):
-    __tablename__ = "city_metro" 
+class City(db.Model):
+    __tablename__ = "city" 
     id = db.Column(db.Integer, primary_key=True)
     city_name = db.Column(db.String)
     neighborhood_name = db.Column(db.String)
-    city_link = db.Column(db.String)
     metro_area = db.Column(db.Boolean)
     r_total = db.Column(db.Integer)
     state_id = db.Column(db.Integer, db.ForeignKey("state.id"), index=True)
-    state = db.relationship("State", foreign_keys=state_id)
     county_id = db.Column(db.Integer, db.ForeignKey("county.id"), index=True)
-    county = db.relationship("County", foreign_keys=county_id) 
+    restaurants = db.relationship("Restaurant")
 
     @property 
     def url_slug_city(self):
         return slugify(self.city_name)
 
 
-class RestaurantLinks(db.Model):
-    __tablename__ = "restaurant_links"
+class Restaurant(db.Model):
+    __tablename__ = "restaurant"
     id = db.Column(db.Integer, primary_key=True)
     rest_name = db.Column(db.String)
     rest_link = db.Column(db.String)
@@ -81,18 +74,11 @@ class RestaurantLinks(db.Model):
     menu_url_id = db.Column(db.String)
     menu_link_pdf = db.Column(db.String)
     state_id = db.Column(db.Integer, db.ForeignKey("state.id"), index=True)
-    state = db.relationship("State", foreign_keys=state_id)
     county_id = db.Column(db.Integer, db.ForeignKey("county.id"), index=True)
-    county = db.relationship("County", foreign_keys=county_id) 
-    city_metro_id = db.Column(db.Integer, db.ForeignKey("city_metro.id"), index=True)
-    city_metro = db.relationship("CityMetro", foreign_keys=city_metro_id)
-    cusine = db.relationship('Cusine', secondary='restaurant_links_cusine', backref=db.backref('restaurant_links', lazy='dynamic', cascade="all, delete-orphan", single_parent=True))
-    # menu = db.relationship("Menu", uselist=False, backref="restaurant_links")
+    city_id = db.Column(db.Integer, db.ForeignKey("city.id"), index=True)
 
     @property 
-    def url_slug_menu(self):
-        if self.neighborhood_name is not None:
-            return slugify(self.neighborhood_name)
+    def url_slug_rest(self):
         return slugify(self.rest_name)
 
 class Cusine(db.Model):
@@ -103,7 +89,7 @@ class Cusine(db.Model):
 class RestaurantLinksCusine(db.Model):
     __tablename__ = "restaurant_links_cusine"
     id = db.Column(db.Integer, primary_key=True)
-    restaurant_links_id = db.Column(db.Integer, db.ForeignKey('restaurant_links.id', ondelete='CASCADE'), index=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id', ondelete='CASCADE'), index=True)
     cusine_id = db.Column(db.Integer, db.ForeignKey('cusine.id', ondelete='CASCADE'), index=True)
 
 # class Menu(db.Model):

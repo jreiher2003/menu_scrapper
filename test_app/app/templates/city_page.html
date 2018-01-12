@@ -1,19 +1,54 @@
 {% extends "base.html" %}
 {% block content %}
+city_page.html which has restaurants listed<br>
+{#<h2>{{ city_name }}</h2>
+<p>number of restaurants: {{ rest_total }}</p>#}
 
-<h2>{{ city_name }}</h2>
-<p>number of restaurants: {{ rest_total }}</p>
-
-{% for r in rest %}
-    <a href="{{ url_for('rest_page_city', url_slug_state=url_slug_state, state_id=state_id, url_slug_city=url_slug_city, city_metro_id=city_metro_id, url_slug_rest=r.url_slug_menu, rest_id=r.id) }}">{{ r.rest_name }}</a><br>
+{% for r in rest.items %}
+    <a href="{{ url_for('rest_page_city', url_slug_state=url_slug_state, state_id=state_id, url_slug_city=url_slug_city, city_id=city_id, url_slug_rest=r.url_slug_rest, rest_id=r.id) }}">{{ r.rest_name }}</a><br>
     {{ r.address }}<br>
     {{ r.city_ }}, {{ r.state_ }} {{ r.zip_ }}<br>
     {{ r.phone }}<br>
+    Menu: {{ r.text_menu_available }}<br>
       {% for x in r.cusine %}
-       {{ x.name }},
+       <a href="{{ url_for('page_cusine_city', url_slug_state=url_slug_state, state_id=state_id, url_slug_city=url_slug_city, city_id=city_id, url_slug_cusine=x.url_slug_cusine, cusine_id=x.id) }}">{{ x.name }}</a>,{{ x.id }} ,
      {% endfor %}
     <hr>
-    
     <br>
 {% endfor %}
+    <br><br>
+
+<nav>
+   <ul class="pagination pagination-lg">
+    {% if rest.has_prev %}
+    <li><a href="{{ url_for('city_page', url_slug_state=url_slug_state ,state_id=state_id ,url_slug_city=url_slug_city ,city_id=city_id, page=rest.prev_num) }}">Previous</a></li>
+    {% else %}
+    <li><a class="btn disabled">Previous</a></li>
+    {% endif %} 
+    {% for page in rest.iter_pages() %}
+    {% if page %}
+    {% if page != rest.page %}
+    <li><a class="btn btn-default" href="{{ url_for('city_page',url_slug_state=url_slug_state ,state_id=state_id ,url_slug_city=url_slug_city ,city_id=city_id, page=page) }}">{{ page }}</a></li>
+    {% else %}
+    <li><a class="btn btn-info active" href="{{ url_for('city_page',url_slug_state=url_slug_state ,state_id=state_id ,url_slug_city=url_slug_city ,city_id=city_id, page=page) }}">{{ page }}</a></li>
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+    {% if rest.has_next %}
+    <li><a href="{{ url_for('city_page', url_slug_state=url_slug_state ,state_id=state_id ,url_slug_city=url_slug_city, city_id=city_id, page=rest.next_num) }}">Next</a></li>
+    {% else %}
+    <li><a class="btn disabled">Next</a></li>
+    {% endif %} 
+  </ul>
+</nav>
+
+{#{% for r in rest_cusine %}
+    <a href="{{ url_for('page_cusine_city', url_slug_state=url_slug_state, state_id=state_id, url_slug_city=url_slug_city, city_metro_id=city_metro_id, url_slug_cusine=r[1], cusine_id=r[2]) }}">{{ r[0] }}</a><br>
+{% endfor %}#}
+
+
+
+
+
+
 {% endblock %}
