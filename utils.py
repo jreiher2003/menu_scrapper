@@ -16,7 +16,7 @@ def renew_ip():
         controller.close()
 
 def whats_the_ip():
-    r = requests.get("http://ipinfo.io/ip", proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
+    r = requests.get("http://ipinfo.io/ip", proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'), headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36'})
     soup = bs(r.content, "html5lib")
     ip = soup.find("body")
     print ip.get_text()

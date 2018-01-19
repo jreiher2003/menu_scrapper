@@ -1,7 +1,7 @@
 import os
 import time
 import re
-import xml.etree.ElementTree as ET
+from lxml import etree as ET
 import requests 
 from bs4 import BeautifulSoup as bs
 from utils import renew_ip, whats_the_ip
@@ -9,7 +9,7 @@ from fake_useragent import UserAgent
 from sqlalchemy import create_engine
 from sqlalchemy import desc,asc
 from sqlalchemy.orm import sessionmaker
-from models import Restaurant, Menu, Section, MenuSection, MenuItem, ItemPrice, MenuItemPrice
+from models import Restaurant, RestaurantCoverImage, RestaurantImages, Menu, Section, MenuItem, ItemPrice, ItemAddon
 
 engine = create_engine(os.environ["SCRAPER_URL_TEST"])
 Session = sessionmaker(bind=engine)
@@ -23,7 +23,7 @@ def get_menu_name(menu_id):
     Keyword arguments:
     menu_id --string: id from menu stored in RestaurantLinks.menu_url_id
     """
-    r = requests.get("http://www.menupix.com/menudirectory/menu.php?id="+menu_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
+    r = requests.get("http://www.menupix.com/menudirectory/menu.php?id="+menu_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'), headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36'})
     soup = bs(r.text,"lxml")
     name = soup.find_all("script")
     for n in name:
@@ -40,7 +40,7 @@ def get_javascript_menu_api(restaurant_name):
     Keyword arguments:
     restaurant_name -- string: name of restaurant from RestaurantLinks.menu_name_slug ie: tonys-darts-away
     """
-    content = requests.get("http://menus.singleplatform.co/storefront/menus/"+ restaurant_name +".js?callback=menuApi.defaultApiCallResponseHandler&ref=&current_announcement=1&photos=1&apiKey=k47dex17opfs7y7nae9a6p8o0", proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
+    content = requests.get("http://menus.singleplatform.co/storefront/menus/"+ restaurant_name +".js?callback=menuApi.defaultApiCallResponseHandler&ref=&current_announcement=1&photos=1&apiKey=k47dex17opfs7y7nae9a6p8o0", proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'), headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36'})
     return content.content
 
 def parse_into_xml_string(xml):
@@ -50,115 +50,129 @@ def parse_into_xml_string(xml):
     xml_first = xml[39:]
     xml_string = xml_first[:xml_first.find("</storefront>") + 13]
     return xml_string
-
-def parse_menu1(xml_string, rest_id):
+                                                                               
+def parse_menu(xml_string, rest_id):
+    """ Parses xml from javascript request.  
+    Stores menu name, section_name, section_desc, item_name, 
+    item_desc, price_title, price_value, addon_title, addon_value. 
+    """
     root = ET.fromstring(xml_string)
+    cover_photo = root.findall("./images/cover_photo/loc")
+    for cp in cover_photo: 
+        cover_img = RestaurantCoverImage()
+        cover_img.cover_photo = cp.text.strip()
+        cover_img.restaurant_id = rest_id 
+        session.add(cover_img)
+        session.commit()
+        print cover_img.cover_photo
+    images = root.findall("./images/image/loc")
+    for img in images:
+        rest_img = RestaurantImages()
+        rest_img.photos = img.text.strip()
+        rest_img.restaurant_id = rest_id 
+        session.add(rest_img)
+        session.commit()
+        print rest_img.photos
     for menus in root:
         for menu in menus:
-            for m in menu:
-                if m.tag == "title" and m.text is not None:
-                    print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
-                    print m.tag, m.text.strip()
+            for m in menu.iterchildren(reversed=True):
+                if m.tag == "title" and len(m.text.strip()) > 0:
+                    _m = Menu()
                     print "\n"
+                    _m.name = m.text.strip()
+                    _m.restaurant_id = rest_id
+                    session.add(_m)
+                    session.commit() 
+                    print _m.name 
+                    print "-----------------------------------------"
                 for sections in m:
-                    for section in sections:
-                       
-                        if section.tag == "section_desc" and section.text is not None:
-                            print section.tag, section.text.strip()
-                        if section.tag == "section_name" and section.text is not None:
-                            print section.tag, section.text.strip()
+                    for section in sections.iterchildren(reversed=True):
+                        if section.tag == "section_name":
+                            print "\n"
+                            menu_t = [e.text for e in section.getparent().getparent().getparent() if e.tag == "title"]
+                            menu_query = session.query(Menu).filter_by(name=menu_t[0], restaurant_id=rest_id).first()
+                            sn = section.text.strip()
+                            sd = section.getprevious().getprevious().text.strip()
+                            _section = Section()
+                            _section.name = sn
+                            _section.menu_id = menu_query.id
+                            _section.restaurant_id = rest_id
+                            if not sd.isdigit():
+                                _section.description = sd 
+                            session.add(_section)
+                            session.commit()
+                            print _section.name, ":@ ", _section.description
                             print "\n"
                         for menu_items in section:
                             for menu_item in menu_items:
-                                if menu_item.tag == "item_title" and menu_item.text is not None:
-                                    print menu_item.tag, menu_item.text.strip() 
-                                if menu_item.tag == "item_description" and menu_item.text is not None:
-                                    print menu_item.tag, menu_item.text.strip()
+                                if menu_item.tag == "item_title":
+                                    print "\n"
+                                    menu_t = [e.text for e in menu_item.getparent().getparent().getparent().getparent().getparent() if e.tag == "title"]
+                                    menu_query = session.query(Menu).filter_by(name=menu_t[0], restaurant_id=rest_id).first()
+                                    menu_i = [e.text for e in menu_item.getparent().getparent().getparent() if e.tag == "section_name"]
+                                    section_query = session.query(Section).filter_by(name=menu_i[0], menu_id=menu_query.id, restaurant_id=rest_id).first()
+                                    mi = menu_item.text.strip()
+                                    md = menu_item.getprevious().getprevious().text.strip()
+                                    _mi = MenuItem()
+                                    _mi.name = mi
+                                    _mi.menu_id = menu_query.id 
+                                    _mi.section_id = section_query.id 
+                                    _mi.restaurant_id = rest_id
+                                    if not md.isdigit():
+                                        _mi.description = md
+                                    session.add(_mi)
+                                    session.commit()
+                                    print _mi.name, " $$ ", _mi.description
                                 for menu_item_prices in menu_item:
-                                    for menu_item_price in menu_item_prices:
-                                        if menu_item_price.tag == "price_title":
-                                            print menu_item_price.tag, menu_item_price.text.strip()
+                                    for menu_item_price in menu_item_prices.iterchildren(reversed=True):#.iterchildren(reversed=True)
                                         if menu_item_price.tag == "price_value":
-                                            print menu_item_price.tag, menu_item_price.text.strip() 
+                                            menu_t = [e.text for e in menu_item_price.getparent().getparent().getparent().getparent().getparent().getparent().getparent() if e.tag == "title"]
+                                            menu_query = session.query(Menu).filter_by(name=menu_t[0], restaurant_id=rest_id).first()
+                                            menu_i = [e.text for e in menu_item_price.getparent().getparent().getparent().getparent().getparent() if e.tag == "section_name"]
+                                            section_query = session.query(Section).filter_by(name=menu_i[0], menu_id=menu_query.id, restaurant_id=rest_id).first()
+                                            item_t = [e.text for e in menu_item_price.getparent().getparent().getparent() if e.tag == "item_title"]
+                                            item_query = session.query(MenuItem).filter_by(name=item_t[0], restaurant_id=rest_id, menu_id=menu_query.id, section_id=section_query.id).first() 
+                                            mip = menu_item_price.text.strip()
+                                            mipt = menu_item_price.getprevious().text.strip()
+                                            ip = ItemPrice()
+                                            ip.price_value = mip 
+                                            ip.menu_id = menu_query.id
+                                            ip.section_id = section_query.id
+                                            ip.menu_item_id = item_query.id
+                                            ip.restaurant_id = rest_id 
+                                            if not mipt.isdigit():
+                                                ip.price_title = mipt
+                                            session.add(ip)
+                                            session.commit()
+                                            print ip.price_title, "** " ,ip.price_value,
+                                            print "\n"
                                 for menu_item_addons in menu_item:
-                                    for menu_item_addon in menu_item_addons:
-                                        # print menu_item_addon.tag, menu_item_addon.text"##################################################"
-                                        if menu_item_addon.tag == "addon_title" and menu_item_addon.text is not None:
-                                            print menu_item_addon.tag, menu_item_addon.text.strip() 
-                                        if menu_item_addon.tag == "addon_value" and menu_item_addon.text is not None:
-                                            print menu_item_addon.tag, menu_item_addon.text.strip()
-                                        
-
-
-
-
-
-
-def parse_menu(xml_string, rest_id):
-    """ Parses xml from javascript request.  
-    Stores menu name, category_name, category_desc, item_name, 
-    item_desc, price, addon_title, addon_value. 
-    """
-    root = ET.fromstring(xml_string)
-    menus = root.findall("./menus/menu")
-    sections = root.findall(".//menus/menu")
-    for section in sections:
-        print "\n"
-        for menu in section.iter(tag="title"):
-            m = Menu()
-            print menu.tag, menu.text
-            m.name = menu.text
-            m.restaurant_id = rest_id
-            print '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$' 
-        for menu_cat in section.iter(tag="section_name"):
-            s = Section()
-            ms = MenuSection()
-            print menu_cat.tag, menu_cat.text
-            s.name = menu_cat.text
-        for menu_description in section.iter(tag="section_desc"):
-            print menu_description.tag, menu_description.text
-            s.description = menu_description.text  
-        session.add(m)
-        session.add(s)
-        ms.menu_id = m.id 
-        ms.section_id = s.id 
-        session.add(ms)
-        session.commit() 
-        # for items in section:
-        #     for item in items:
-        #         print "\n"
-        #         mi = MenuItem()
-        #         for i in item.iter(tag="item_title"):
-        #             print i.tag, i.text
-        #             mi.name = i.text 
-        #         for i in item.iter(tag="item_description"):
-        #             print i.tag, i.text
-        #             mi.description = i.text 
-        #             mi.section_id = s.id 
-        #         session.add(mi)
-        #         session.commit() 
-        #         for i in item:
-        #             for prices in i:
-        #                 ip = ItemPrice()
-        #                 mip = MenuItemPrice()
-        #                 for price in prices.iter(tag="price_title"):
-        #                     print price.tag, price.text 
-        #                     ip.price_title = price.text
-        #                 for price in prices.iter(tag="price_value"):
-        #                     print price.tag, price.text
-        #                     ip.price_value = price.text 
-        #                 for price in prices.iter(tag="addon_title"):
-        #                     print price.tag, price.text
-        #                     ip.addon_title = price.text 
-        #                 for price in prices.iter(tag="addon_value"):
-        #                     print price.tag, price.text
-        #                     ip.addon_value = price.text
-        #                 session.add(ip)
-        #                 session.commit()
-        #                 mip.menu_item_id = mi.id 
-        #                 mip.item_price_id = mi.id 
-        #                 session.add(ip)
-        #                 session.commit()
+                                    for menu_item_addon in menu_item_addons.iterchildren(reversed=True):
+                                        if menu_item_addon.tag == "addon_title":
+                                            menu_t = [e.text for e in menu_item_addon.getparent().getparent().getparent().getparent().getparent().getparent().getparent() if e.tag == "title"]
+                                            menu_query = session.query(Menu).filter_by(name=menu_t[0], restaurant_id=rest_id).first()
+                                            menu_i = [e.text for e in menu_item_addon.getparent().getparent().getparent().getparent().getparent() if e.tag == "section_name"]
+                                            section_query = session.query(Section).filter_by(name=menu_i[0], menu_id=menu_query.id, restaurant_id=rest_id).first()
+                                            item_t = [e.text for e in menu_item_addon.getparent().getparent().getparent() if e.tag == "item_title"]
+                                            item_query = session.query(MenuItem).filter_by(name=item_t[0], restaurant_id=rest_id, menu_id=menu_query.id, section_id=section_query.id).first()
+                                            miat = menu_item_addon.text.strip()
+                                            ia = ItemAddon()
+                                            ia.addon_title = miat
+                                            ia.menu_id = menu_query.id
+                                            ia.section_id = section_query.id
+                                            ia.menu_item_id = item_query.id
+                                            ia.rest_id = rest_id
+                                            try:
+                                                miatd = menu_item_addon.getnext().text.strip()
+                                                print "MIATD: ", miatd
+                                                ia.addon_value = miatd 
+                                            except AttributeError:
+                                                print "NO ADDON VALUE"
+                                            finally:
+                                                session.add(ia)
+                                                session.commit()
+                                                print ia.addon_title, "$$ ", ia.addon_value
+               
 
 def pop_menu_items():
     renew_ip()
@@ -179,21 +193,13 @@ def pop_menu_items():
             if menu_name:
                 xml = get_javascript_menu_api(menu_name)
                 xml_string = parse_into_xml_string(xml)
-                parse_menu1(xml_string, rest.id)
+                parse_menu(xml_string, rest.id)
                 counter_menu += 1
             print "number of menu's scraped: ", counter_menu
-
-def requests_for_menu():
-    r = requests.get("http://www.menupix.com/menudirectory/menu.php?id=380210266", proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'))
-    print r.status_code
-    print r.headers
-    print r.json
-
 
 if __name__ == "__main__":
     t0 = time.time()
     pop_menu_items()
-    # parse_menu1("test1.xml", "10")
     whats_the_ip()
     end = (time.time() - t0)
     print end, ": in seconds", "  ", end/60, ": in minutes"
