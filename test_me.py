@@ -138,7 +138,8 @@ def parse_menu(xml_string, rest_id):
                                             ip.price_value = mip 
                                             ip.menu_id = menu_query.id
                                             ip.section_id = section_query.id
-                                            ip.menu_item_id = item_query.id
+                                            if item_query:  
+                                                ip.menu_item_id = item_query.id
                                             ip.restaurant_id = rest_id 
                                             if not mipt.isdigit():
                                                 ip.price_title = mipt
@@ -161,7 +162,7 @@ def parse_menu(xml_string, rest_id):
                                             ia.menu_id = menu_query.id
                                             ia.section_id = section_query.id
                                             ia.menu_item_id = item_query.id
-                                            ia.rest_id = rest_id
+                                            ia.restaurant_id = rest_id
                                             try:
                                                 miatd = menu_item_addon.getnext().text.strip()
                                                 print "MIATD: ", miatd
