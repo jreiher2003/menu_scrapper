@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import time
 import re
@@ -41,7 +42,7 @@ def get_javascript_menu_api(restaurant_name):
     restaurant_name -- string: name of restaurant from RestaurantLinks.menu_name_slug ie: tonys-darts-away
     """
     content = requests.get("http://menus.singleplatform.co/storefront/menus/"+ restaurant_name +".js?callback=menuApi.defaultApiCallResponseHandler&ref=&current_announcement=1&photos=1&apiKey=k47dex17opfs7y7nae9a6p8o0", proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'), headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36'})
-    return content.content
+    return content.text
 
 def parse_into_xml_string(xml):
 
@@ -50,13 +51,18 @@ def parse_into_xml_string(xml):
     xml_first = xml[39:]
     xml_string = xml_first[:xml_first.find("</storefront>") + 13]
     return xml_string
+
+def parse_from_unicode(unicode_str):
+    utf8_parser = ET.XMLParser(encoding='utf-8')
+    s = unicode_str.encode('utf-8')
+    return ET.fromstring(s, parser=utf8_parser)
                                                                                
 def parse_menu(xml_string, rest_id):
     """ Parses xml from javascript request.  
     Stores menu name, section_name, section_desc, item_name, 
     item_desc, price_title, price_value, addon_title, addon_value. 
     """
-    root = ET.fromstring(xml_string)
+    root = parse_from_unicode(xml_string)
     cover_photo = root.findall("./images/cover_photo/loc")
     for cp in cover_photo: 
         cover_img = RestaurantCoverImage()

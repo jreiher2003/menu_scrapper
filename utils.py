@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from stem import Signal
 from stem.control import Controller
 from selenium import webdriver
