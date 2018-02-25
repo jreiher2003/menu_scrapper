@@ -24,16 +24,35 @@ def get_menu_name(menu_id):
     Keyword arguments:
     menu_id --string: id from menu stored in RestaurantLinks.menu_url_id
     """
-    r = requests.get("http://www.menupix.com/menudirectory/menu.php?id="+menu_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'), headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36'})
-    soup = bs(r.text,"lxml")
-    name = soup.find_all("script")
-    for n in name:
-        p = re.search(r"(menuApi.loadMenusForLocation).*", n.text)
-        if p:
-            menu_match = p.group(0)
-            menu_first = menu_match[30:]
-            menu = menu_first[:menu_first.find("'")]
-            return menu
+    if menu_id:
+        try:
+            r = requests.get("http://www.menupix.com/menudirectory/menu.php?id="+menu_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'), headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36'})
+            soup = bs(r.text,"lxml")
+            name = soup.find_all("script")
+            for n in name:
+                p = re.search(r"(menuApi.loadMenusForLocation).*", n.text)
+                if p:
+                    menu_match = p.group(0)
+                    menu_first = menu_match[30:]
+                    menu = menu_first[:menu_first.find("'")]
+                    return menu
+        except requests.exceptions.ConnectionError:
+            print "ERROR: connection error: get_menu_name(%s)" % menu_id
+            time.sleep(20)
+            renew_ip()
+            time.sleep(20)
+            r = requests.get("http://www.menupix.com/menudirectory/menu.php?id="+menu_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'), headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36'})
+            soup = bs(r.text,"lxml")
+            name = soup.find_all("script")
+            for n in name:
+                p = re.search(r"(menuApi.loadMenusForLocation).*", n.text)
+                if p:
+                    menu_match = p.group(0)
+                    menu_first = menu_match[30:]
+                    menu = menu_first[:menu_first.find("'")]
+                    return menu
+    else:
+        menu_id = "0"
 
 def get_javascript_menu_api(restaurant_name):
     """ Makes a request to singleplatform api and returns the javascript var callback defaultApiCallResponseHandler
@@ -41,8 +60,17 @@ def get_javascript_menu_api(restaurant_name):
     Keyword arguments:
     restaurant_name -- string: name of restaurant from RestaurantLinks.menu_name_slug ie: tonys-darts-away
     """
-    content = requests.get("http://menus.singleplatform.co/storefront/menus/"+ restaurant_name +".js?callback=menuApi.defaultApiCallResponseHandler&ref=&current_announcement=1&photos=1&apiKey=k47dex17opfs7y7nae9a6p8o0", proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'), headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36'})
-    return content.text
+    try:
+        content = requests.get("http://menus.singleplatform.co/storefront/menus/"+ restaurant_name +".js?callback=menuApi.defaultApiCallResponseHandler&ref=&current_announcement=1&photos=1&apiKey=k47dex17opfs7y7nae9a6p8o0", proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'), headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36'})
+        print content.url
+        return content.text
+    except requests.exceptions.ConnectionError:
+        print "ERROR: connection error: get_javascript_menu_api(%s)" % restaurant_name
+        time.sleep(20)
+        renew_ip()
+        time.sleep(20)
+        content = requests.get("http://menus.singleplatform.co/storefront/menus/"+ restaurant_name +".js?callback=menuApi.defaultApiCallResponseHandler&ref=&current_announcement=1&photos=1&apiKey=k47dex17opfs7y7nae9a6p8o0", proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'), headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36'})
+        return content.text
 
 def parse_into_xml_string(xml):
 
@@ -96,7 +124,7 @@ def parse_menu(xml_string, rest_id):
                         if section.tag == "section_name":
                             print "\n"
                             menu_t = [e.text for e in section.getparent().getparent().getparent() if e.tag == "title"]
-                            menu_query = session.query(Menu).filter_by(name=menu_t[0], restaurant_id=rest_id).first()
+                            menu_query = session.query(Menu).filter_by(name=menu_t[0].strip(), restaurant_id=rest_id).first()
                             sn = section.text.strip()
                             sd = section.getprevious().getprevious().text.strip()
                             _section = Section()
@@ -114,9 +142,9 @@ def parse_menu(xml_string, rest_id):
                                 if menu_item.tag == "item_title":
                                     print "\n"
                                     menu_t = [e.text for e in menu_item.getparent().getparent().getparent().getparent().getparent() if e.tag == "title"]
-                                    menu_query = session.query(Menu).filter_by(name=menu_t[0], restaurant_id=rest_id).first()
+                                    menu_query = session.query(Menu).filter_by(name=menu_t[0].strip(), restaurant_id=rest_id).first()
                                     menu_i = [e.text for e in menu_item.getparent().getparent().getparent() if e.tag == "section_name"]
-                                    section_query = session.query(Section).filter_by(name=menu_i[0], menu_id=menu_query.id, restaurant_id=rest_id).first()
+                                    section_query = session.query(Section).filter_by(name=menu_i[0].strip(), menu_id=menu_query.id, restaurant_id=rest_id).first()
                                     mi = menu_item.text.strip()
                                     md = menu_item.getprevious().getprevious().text.strip()
                                     _mi = MenuItem()
@@ -133,11 +161,11 @@ def parse_menu(xml_string, rest_id):
                                     for menu_item_price in menu_item_prices.iterchildren(reversed=True):#.iterchildren(reversed=True)
                                         if menu_item_price.tag == "price_value":
                                             menu_t = [e.text for e in menu_item_price.getparent().getparent().getparent().getparent().getparent().getparent().getparent() if e.tag == "title"]
-                                            menu_query = session.query(Menu).filter_by(name=menu_t[0], restaurant_id=rest_id).first()
+                                            menu_query = session.query(Menu).filter_by(name=menu_t[0].strip(), restaurant_id=rest_id).first()
                                             menu_i = [e.text for e in menu_item_price.getparent().getparent().getparent().getparent().getparent() if e.tag == "section_name"]
-                                            section_query = session.query(Section).filter_by(name=menu_i[0], menu_id=menu_query.id, restaurant_id=rest_id).first()
+                                            section_query = session.query(Section).filter_by(name=menu_i[0].strip(), menu_id=menu_query.id, restaurant_id=rest_id).first()
                                             item_t = [e.text for e in menu_item_price.getparent().getparent().getparent() if e.tag == "item_title"]
-                                            item_query = session.query(MenuItem).filter_by(name=item_t[0], restaurant_id=rest_id, menu_id=menu_query.id, section_id=section_query.id).first() 
+                                            item_query = session.query(MenuItem).filter_by(name=item_t[0].strip(), restaurant_id=rest_id, menu_id=menu_query.id, section_id=section_query.id).first() 
                                             mip = menu_item_price.text.strip()
                                             mipt = menu_item_price.getprevious().text.strip()
                                             ip = ItemPrice()
@@ -157,11 +185,11 @@ def parse_menu(xml_string, rest_id):
                                     for menu_item_addon in menu_item_addons.iterchildren(reversed=True):
                                         if menu_item_addon.tag == "addon_title":
                                             menu_t = [e.text for e in menu_item_addon.getparent().getparent().getparent().getparent().getparent().getparent().getparent() if e.tag == "title"]
-                                            menu_query = session.query(Menu).filter_by(name=menu_t[0], restaurant_id=rest_id).first()
+                                            menu_query = session.query(Menu).filter_by(name=menu_t[0].strip(), restaurant_id=rest_id).first()
                                             menu_i = [e.text for e in menu_item_addon.getparent().getparent().getparent().getparent().getparent() if e.tag == "section_name"]
-                                            section_query = session.query(Section).filter_by(name=menu_i[0], menu_id=menu_query.id, restaurant_id=rest_id).first()
+                                            section_query = session.query(Section).filter_by(name=menu_i[0].strip(), menu_id=menu_query.id, restaurant_id=rest_id).first()
                                             item_t = [e.text for e in menu_item_addon.getparent().getparent().getparent() if e.tag == "item_title"]
-                                            item_query = session.query(MenuItem).filter_by(name=item_t[0], restaurant_id=rest_id, menu_id=menu_query.id, section_id=section_query.id).first()
+                                            item_query = session.query(MenuItem).filter_by(name=item_t[0].strip(), restaurant_id=rest_id, menu_id=menu_query.id, section_id=section_query.id).first()
                                             miat = menu_item_addon.text.strip()
                                             ia = ItemAddon()
                                             ia.addon_title = miat
@@ -198,11 +226,22 @@ def pop_menu_items():
             print "restaurant menu id: ",rest.id, " menu_url_id: ",rest.menu_url_id, "rest_name: ", rest.rest_name
             menu_name = get_menu_name(rest.menu_url_id)
             if menu_name:
-                xml = get_javascript_menu_api(menu_name)
-                xml_string = parse_into_xml_string(xml)
-                parse_menu(xml_string, rest.id)
-                counter_menu += 1
-            print "number of menu's scraped: ", counter_menu
+                try:
+                    xml = get_javascript_menu_api(menu_name)
+                    xml_string = parse_into_xml_string(xml)
+                    parse_menu(xml_string, rest.id)
+                    counter_menu += 1
+                    print "number of menu's scraped: ", counter_menu
+                except requests.exceptions.ConnectionError:
+                    print "ERROR: connection error"
+                    time.sleep(20)
+                    renew_ip()
+                    time.sleep(20)
+                    xml = get_javascript_menu_api(menu_name)
+                    xml_string = parse_into_xml_string(xml)
+                    parse_menu(xml_string, rest.id)
+                    counter_menu += 1
+                    print "number of menu's scraped: ", counter_menu
 
 if __name__ == "__main__":
     t0 = time.time()
