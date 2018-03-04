@@ -38,9 +38,9 @@ def get_menu_name(menu_id):
                     return menu
         except requests.exceptions.ConnectionError:
             print "ERROR: connection error: get_menu_name(%s)" % menu_id
-            time.sleep(20)
+            # time.sleep(20)
             renew_ip()
-            time.sleep(20)
+            time.sleep(90)
             r = requests.get("http://www.menupix.com/menudirectory/menu.php?id="+menu_id, proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'), headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36'})
             soup = bs(r.text,"lxml")
             name = soup.find_all("script")
@@ -66,9 +66,9 @@ def get_javascript_menu_api(restaurant_name):
         return content.text
     except requests.exceptions.ConnectionError:
         print "ERROR: connection error: get_javascript_menu_api(%s)" % restaurant_name
-        time.sleep(20)
+        # time.sleep(20)
         renew_ip()
-        time.sleep(20)
+        time.sleep(90)
         content = requests.get("http://menus.singleplatform.co/storefront/menus/"+ restaurant_name +".js?callback=menuApi.defaultApiCallResponseHandler&ref=&current_announcement=1&photos=1&apiKey=k47dex17opfs7y7nae9a6p8o0", proxies=dict(http='socks5://127.0.0.1:9050',https='socks5://127.0.0.1:9050'), headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36'})
         return content.text
 
@@ -234,9 +234,9 @@ def pop_menu_items():
                     print "number of menu's scraped: ", counter_menu
                 except requests.exceptions.ConnectionError:
                     print "ERROR: connection error"
-                    time.sleep(20)
+                    # time.sleep(20)
                     renew_ip()
-                    time.sleep(20)
+                    time.sleep(90)
                     xml = get_javascript_menu_api(menu_name)
                     xml_string = parse_into_xml_string(xml)
                     parse_menu(xml_string, rest.id)
